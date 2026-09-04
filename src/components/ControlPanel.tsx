@@ -1,5 +1,6 @@
 import React, { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import APP_CONFIG from "../config/appIdentity.json";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "./ui/button";
 import {
@@ -172,7 +173,10 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
     joinable,
     dismiss: dismissJoinable,
     markRequested,
-  } = useJoinableWorkspaces(user?.id ?? null, isSignedIn && !invitationToken);
+  } = useJoinableWorkspaces(
+    user?.id ?? null,
+    APP_CONFIG.enableTeams && isSignedIn && !invitationToken
+  );
   const usage = useUsage();
   const upsell = decideUpsell({
     authLoaded,
@@ -886,12 +890,14 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
         onOk={() => {}}
       />
 
-      <UpgradePrompt
-        open={showUpgradePrompt}
-        onOpenChange={setShowUpgradePrompt}
-        wordsUsed={limitData?.wordsUsed}
-        limit={limitData?.limit}
-      />
+      {APP_CONFIG.enableBilling && (
+        <UpgradePrompt
+          open={showUpgradePrompt}
+          onOpenChange={setShowUpgradePrompt}
+          wordsUsed={limitData?.wordsUsed}
+          limit={limitData?.limit}
+        />
+      )}
 
       <PostMigrationOnboarding
         open={showPostMigration}
@@ -927,13 +933,15 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
         }}
       />
 
-      <JoinYourTeamModal
-        joinable={joinable}
-        domain={user?.email?.split("@")[1] ?? null}
-        onDismiss={dismissJoinable}
-        onRequested={markRequested}
-        onJoined={() => setActiveView("personal-notes")}
-      />
+      {APP_CONFIG.enableTeams && (
+        <JoinYourTeamModal
+          joinable={joinable}
+          domain={user?.email?.split("@")[1] ?? null}
+          onDismiss={dismissJoinable}
+          onRequested={markRequested}
+          onJoined={() => setActiveView("personal-notes")}
+        />
+      )}
 
       {showSearch && (
         <Suspense fallback={null}>
@@ -986,7 +994,7 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
               setSettingsSection(undefined);
               setShowSettings(true);
             }}
-            onOpenReferrals={() => setShowReferrals(true)}
+            onOpenReferrals={APP_CONFIG.enableReferrals ? () => setShowReferrals(true) : undefined}
             onUpgrade={() => {
               setSettingsSection("plansBilling");
               setShowSettings(true);

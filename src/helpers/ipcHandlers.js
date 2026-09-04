@@ -586,6 +586,7 @@ class IPCHandlers {
     this.linuxPortalAudioManager = managers.linuxPortalAudioManager;
     this.windowsLoopbackAudioManager = managers.windowsLoopbackAudioManager;
     this.meetingAecManager = managers.meetingAecManager;
+    this.oidcIdentityManager = managers.oidcIdentityManager;
     this.getQdrantManager = managers.getQdrantManager;
     this.oauthProtocolRegistered = managers.oauthProtocolRegistered === true;
     this.oauthProtocol = managers.oauthProtocol || "openwhispr";
@@ -636,6 +637,12 @@ class IPCHandlers {
     this._logDetectedGpus();
     this.setupHandlers();
     // Lives for the app's lifetime; IPCHandlers has no teardown path.
+    this.oidcIdentityManager?.on("session-changed", () => {
+      void this.oidcIdentityManager
+        .getSession()
+        .then((session) => broadcastToWindows("identity-session-changed", { session }));
+    });
+
     tokenStore.subscribe(({ generation, token }) => {
       this.enterpriseIdentityManager?.clear();
       if (!token) {
@@ -5495,6 +5502,28 @@ class IPCHandlers {
         strategy: "native",
       });
     });
+
+    ipcMain.handle("identity-sign-in", async () => {
+      if (!this.oidcIdentityManager) return { success: false, error: "SSO_NOT_CONFIGURED" };
+      return this.oidcIdentityManager.signIn();
+    });
+
+    ipcMain.handle("identity-sign-out", async () => {
+      if (!this.oidcIdentityManager) return { success: true };
+      return this.oidcIdentityManager.signOut();
+    });
+
+    ipcMain.handle("identity-get-session", async () => {
+      if (!this.oidcIdentityManager) return null;
+      return this.oidcIdentityManager.getSession();
+    });
+
+    ipcMain.handle("identity-refresh-session", async () => {
+      if (!this.oidcIdentityManager) return { session: null };
+      return this.oidcIdentityManager.refreshSession();
+    });
+
+    ipcMain.handle("identity-is-configured", () => Boolean(this.oidcIdentityManager?.isConfigured()));
 
     ipcMain.handle("auth-clear-session", async (event) => {
       try {

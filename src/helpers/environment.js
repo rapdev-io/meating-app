@@ -20,6 +20,7 @@ const SECRET_KEYS = [
   "BEDROCK_SESSION_TOKEN",
   "AZURE_OPENAI_API_KEY",
   "VERTEX_API_KEY",
+  "OIDC_CLIENT_SECRET",
 ];
 
 const SECRET_KEY_SET = new Set(SECRET_KEYS);
@@ -59,6 +60,14 @@ const PERSISTED_KEYS = [
   "AZURE_OPENAI_API_VERSION",
   "VERTEX_PROJECT",
   "VERTEX_LOCATION",
+  "OIDC_ISSUER_URL",
+  "OIDC_CLIENT_ID",
+  "OIDC_SCOPES",
+  "OIDC_ALLOWED_DOMAIN",
+  "OIDC_ALLOWED_TENANT",
+  "OIDC_TENANT_CLAIM",
+  "OIDC_REDIRECT_PORT",
+  "SSO_OFFLINE_GRACE_MS",
 ];
 
 // Module-level so writes are serialized across all instances — hotkeyManager

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import APP_CONFIG from "../config/appIdentity.json";
 import { AlertCircle } from "lucide-react";
 import { CompactAuthenticationFlow } from "./CompactAuthenticationFlow";
 import UseCaseStep from "./onboarding/UseCaseStep";
@@ -511,6 +512,18 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       settingsStore,
     ]
   );
+
+  // Internal (Protein/RapDev) build: the account/cloud-setup-choice screen
+  // (OpenWhispr Cloud vs. BYOK vs. local) is skipped in favor of local setup —
+  // "Default to local transcription" — but the sign-in screen itself stays:
+  // the user can still sign in with company SSO or continue without an
+  // account (both already available), it just isn't forced either way.
+  useEffect(() => {
+    if (!APP_CONFIG.internalBuild || isFinishing) return;
+    if (currentStepId === "setup-choice" && session.setupMode === null) {
+      void handleSetupSelection("local");
+    }
+  }, [currentStepId, handleSetupSelection, isFinishing, session.setupMode]);
 
   const continueFromCurrentStep = useCallback(async () => {
     // A banner from an earlier failed attempt must not outlive the retry.

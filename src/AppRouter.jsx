@@ -8,6 +8,7 @@ import UpdateNotificationOverlay from "./components/UpdateNotificationOverlay.ts
 import BackgroundModelDownloadTray from "./components/onboarding/BackgroundModelDownloadTray.tsx";
 import { LEGACY_ONBOARDING_STEP_KEY, ONBOARDING_SESSION_KEY } from "./components/onboarding/flow";
 import { useAuth } from "./hooks/useAuth";
+import APP_CONFIG from "./config/appIdentity.json";
 import { useTheme } from "./hooks/useTheme";
 import { usePolicyStore } from "./stores/policyStore";
 import { resolveSettledControlPanelWindowMode } from "./utils/controlPanelWindowMode.ts";
@@ -73,7 +74,8 @@ function MainApp() {
     // the previous account's rows while validation is still running. A failed
     // (guest/offline) resolution also counts as settled: canSync() then no-ops
     // because no validated auth context exists.
-    if (autoSyncReady) {
+    // Internal (Protein/RapDev) build: never initialize OpenWhispr Cloud sync.
+    if (APP_CONFIG.enableOpenWhisprCloud && autoSyncReady) {
       import("./services/SyncService.js")
         .then(({ syncService }) => syncService.startAutoSync())
         .catch(() => {});

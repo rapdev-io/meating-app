@@ -132,6 +132,23 @@ export interface AuthTokenMutationResult extends AuthTokenState {
   code?: string;
 }
 
+export interface IdentityUser {
+  /** Stable unique identifier (the OIDC `sub` claim). Also exposed as `sub`. */
+  id: string;
+  sub: string;
+  email: string | null;
+  name: string | null;
+  image?: string | null;
+}
+
+export interface IdentitySession {
+  user: IdentityUser;
+  idTokenExpiresAt: number;
+  obtainedAt: number;
+  offlineGrace: boolean;
+  graceExpiresAt?: number;
+}
+
 export interface TranscriptionItem {
   id: number;
   text: string;
@@ -2060,6 +2077,21 @@ declare global {
       ) => Promise<AuthTokenMutationResult>;
       onAuthTokenStateChanged?: (
         callback: (state: { generation: number; hasToken: boolean }) => void
+      ) => () => void;
+
+      // Company SSO (OIDC) — only derived session info crosses this boundary.
+      identitySignIn?: () => Promise<{
+        success: boolean;
+        user?: IdentityUser;
+        error?: string;
+        code?: string;
+      }>;
+      identitySignOut?: () => Promise<{ success: boolean }>;
+      identityGetSession?: () => Promise<IdentitySession | null>;
+      identityRefreshSession?: () => Promise<{ session?: IdentitySession | null; error?: string }>;
+      identityIsConfigured?: () => Promise<boolean>;
+      onIdentitySessionChanged?: (
+        callback: (payload: { session: IdentitySession | null }) => void
       ) => () => void;
 
       // OpenWhispr Cloud API

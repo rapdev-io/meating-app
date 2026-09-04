@@ -1,330 +1,83 @@
-import { createAuthClient } from "better-auth/react";
-import { ssoClient } from "@better-auth/sso/client";
-import { openExternalLink } from "../utils/externalLinks";
-import {
-  authContextFetch,
-  handleAuthRequestError,
-  handleAuthRequestResponse,
-  handleAuthRequestSuccess,
-  observeAuthTokenStateEvent,
-  prepareAuthRequest,
-} from "./authRequestContext";
+// Company SSO (OIDC, Authorization Code + PKCE) session surface for the renderer.
+// All token handling lives in the main process (see oidcIdentityManager.js /
+// preload.js's identity* bridge) — this module only ever sees derived session
+// info (user + expiry + offline-grace flag), never a raw token.
+import type { IdentitySession } from "../types/electron";
 
-export const AUTH_URL = import.meta.env.VITE_AUTH_URL || "https://auth.openwhispr.com";
-export const authClient = createAuthClient({
-  baseURL: AUTH_URL,
-  plugins: [ssoClient()],
-  fetchOptions: {
-    credentials: "omit",
-    customFetchImpl: authContextFetch,
-    headers: { "x-openwhispr-source": "desktop" },
-    onRequest: prepareAuthRequest,
-    onResponse: handleAuthRequestResponse,
-    onSuccess: handleAuthRequestSuccess,
-    onError: handleAuthRequestError,
-  },
-});
+// Non-empty once the app has confirmed SSO is configured (see AuthGate /
+// useAuth's initial isConfigured check). Kept as a plain string so existing
+// `!AUTH_URL` truthiness checks (e.g. SettingsPage's "not configured" gate)
+// keep working without changes; it carries no real URL under this flow.
+export let AUTH_URL = "";
 
-let authRefetchTimer: ReturnType<typeof setTimeout> | null = null;
-window.electronAPI?.onAuthTokenStateChanged?.((state) => {
-  observeAuthTokenStateEvent(state);
-  // Main broadcasts a successful compare-and-set rotation before the IPC
-  // invocation resolves. Deferring avoids aborting the exact session request
-  // that is about to bind the new generation.
-  if (authRefetchTimer) clearTimeout(authRefetchTimer);
-  authRefetchTimer = setTimeout(() => {
-    authRefetchTimer = null;
-    authClient.$store.notify("$sessionSignal");
-  }, 0);
-});
-
-export type SocialProvider = "google" | "microsoft" | "apple";
-
-const LAST_SIGN_IN_STORAGE_KEY = "openwhispr:lastSignInTime";
-const GRACE_PERIOD_MS = 60_000;
-const GRACE_RETRY_COUNT = 6;
-const INITIAL_GRACE_RETRY_DELAY_MS = 500;
-
-let lastSignInTime: number | null = null;
-
-function getLocalStorageSafe(): Storage | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
+export function _setAuthConfigured(configured: boolean): void {
+  AUTH_URL = configured ? "configured" : "";
 }
 
-function loadLastSignInTimeFromStorage(): number | null {
-  const storage = getLocalStorageSafe();
-  if (!storage) return null;
-
-  const raw = storage.getItem(LAST_SIGN_IN_STORAGE_KEY);
-  if (!raw) return null;
-
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    storage.removeItem(LAST_SIGN_IN_STORAGE_KEY);
-    return null;
-  }
-
-  return parsed;
-}
-
-function persistLastSignInTime(value: number | null): void {
-  const storage = getLocalStorageSafe();
-  if (!storage) return;
-
-  if (value === null) {
-    storage.removeItem(LAST_SIGN_IN_STORAGE_KEY);
-  } else {
-    storage.setItem(LAST_SIGN_IN_STORAGE_KEY, String(value));
-  }
-}
-
-function getLastSignInTime(): number | null {
-  const stored = loadLastSignInTimeFromStorage();
-  if (stored !== null) {
-    lastSignInTime = stored;
-  }
-  return lastSignInTime;
-}
-
-function createAuthExpiredError(originalError: unknown): Error {
-  const error = originalError instanceof Error ? originalError : new Error("Session expired");
-  Object.assign(error, {
-    code: "AUTH_EXPIRED",
-    messageKey: "hooks.audioRecording.errorDescriptions.sessionExpired",
-  });
-  return error;
-}
-
-function clearLastSignInTime(): void {
-  lastSignInTime = null;
-  persistLastSignInTime(null);
-}
-
-function markSignedOutState(): void {
-  const storage = getLocalStorageSafe();
-  storage?.setItem("isSignedIn", "false");
-  clearLastSignInTime();
-}
-
-export function updateLastSignInTime(): void {
-  const now = Date.now();
-  lastSignInTime = now;
-  persistLastSignInTime(now);
-}
-
-export function isWithinGracePeriod(): boolean {
-  const startedAt = getLastSignInTime();
-  if (!startedAt) return false;
-
-  const elapsed = Math.max(0, Date.now() - startedAt);
-  return elapsed < GRACE_PERIOD_MS;
-}
-
-export function getGracePeriodRemainingMs(): number {
-  const startedAt = getLastSignInTime();
-  if (!startedAt) return 0;
-  return Math.max(0, GRACE_PERIOD_MS - Math.max(0, Date.now() - startedAt));
+export async function signIn(): Promise<{ success: boolean; error?: string; code?: string }> {
+  const result = await window.electronAPI?.identitySignIn?.();
+  if (!result) return { success: false, error: "Sign-in is not available in this build." };
+  return result;
 }
 
 export async function signOut(): Promise<void> {
-  credentialAccountCache = null;
   try {
-    await authClient.signOut();
+    await window.electronAPI?.identitySignOut?.();
   } catch {
-    // Local sign-out must still cross a credential generation boundary when
-    // the server is offline; the remote session can expire independently.
-  } finally {
-    if (window.electronAPI?.authClearSession) {
-      await window.electronAPI.authClearSession().catch(() => undefined);
-    }
-    markSignedOutState();
+    // Best-effort — local state is cleared by the main process regardless.
   }
 }
 
+export async function getSession(): Promise<IdentitySession | null> {
+  return (await window.electronAPI?.identityGetSession?.()) ?? null;
+}
+
+function isAuthExpiredError(error: unknown): boolean {
+  const err = error as { code?: string; message?: string } | undefined;
+  if (err?.code === "AUTH_EXPIRED") return true;
+  const message = err?.message?.toLowerCase() || "";
+  return message.includes("session expired") || message.includes("auth expired");
+}
+
+// Retries an operation once after an explicit session refresh if it fails
+// with an auth-expired signal. The main process is the source of truth for
+// refresh/offline-grace, so this is just a thin retry, not a timer/race guard.
 export async function withSessionRefresh<T>(operation: () => Promise<T>): Promise<T> {
-  const startedInGracePeriod = isWithinGracePeriod();
-  let graceRetriesUsed = 0;
-
-  while (true) {
-    try {
-      return await operation();
-    } catch (error: any) {
-      const isAuthExpired =
-        error?.code === "AUTH_EXPIRED" ||
-        error?.message?.toLowerCase().includes("session expired") ||
-        error?.message?.toLowerCase().includes("auth expired");
-
-      if (!isAuthExpired) {
-        throw error;
-      }
-
-      if (startedInGracePeriod && graceRetriesUsed < GRACE_RETRY_COUNT) {
-        const delayMs = INITIAL_GRACE_RETRY_DELAY_MS * Math.pow(2, graceRetriesUsed);
-        graceRetriesUsed += 1;
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-        continue;
-      }
-
-      throw createAuthExpiredError(error);
-    }
-  }
-}
-
-const DESKTOP_OAUTH_CALLBACK_URL = "https://openwhispr.com/auth/desktop-callback";
-
-export async function signInWithSocial(provider: SocialProvider): Promise<{ error?: Error }> {
   try {
-    const isElectron = Boolean((window as any).electronAPI);
-
-    if (isElectron) {
-      // OAuth must be initiated from the user's browser, not the renderer:
-      // the state cookie Better Auth sets has to land in the same cookie jar
-      // that handles the /api/auth/callback/* round-trip. The shim endpoint
-      // does the POST server-side and 302s with the cookies attached.
-      const protocol = (await window.electronAPI?.getOAuthProtocol?.()) || "openwhispr";
-      const url = new URL(`${AUTH_URL}/api/desktop-signin/${provider}`);
-      url.searchParams.set("callbackURL", `${DESKTOP_OAUTH_CALLBACK_URL}?protocol=${protocol}`);
-      openExternalLink(url.toString());
-      return {};
-    }
-
-    const callbackURL = `${window.location.href.split("?")[0].split("#")[0]}?panel=true`;
-    await authClient.signIn.social({ provider, callbackURL, newUserCallbackURL: callbackURL });
-    return {};
+    return await operation();
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error("Social sign-in failed") };
+    if (!isAuthExpiredError(error)) throw error;
+    const refreshed = await window.electronAPI?.identityRefreshSession?.();
+    if (!refreshed?.session) throw error;
+    return operation();
   }
 }
 
-export async function signInWithSSO(email: string): Promise<{ error?: Error }> {
-  try {
-    const isElectron = Boolean((window as any).electronAPI);
-
-    if (isElectron) {
-      // Same browser-handoff rationale as signInWithSocial: the SSO state cookie
-      // must land in the browser's cookie jar. The /sso shim routes by work-email
-      // domain and 302s to the workspace's IdP with the cookies attached.
-      const protocol = (await window.electronAPI?.getOAuthProtocol?.()) || "openwhispr";
-      const url = new URL(`${AUTH_URL}/api/desktop-signin/sso`);
-      url.searchParams.set("email", email);
-      url.searchParams.set("callbackURL", `${DESKTOP_OAUTH_CALLBACK_URL}?protocol=${protocol}`);
-      openExternalLink(url.toString());
-      return {};
-    }
-
-    const callbackURL = `${window.location.href.split("?")[0].split("#")[0]}?panel=true`;
-    await authClient.signIn.sso({ email, callbackURL });
-    return {};
-  } catch (error) {
-    return { error: error instanceof Error ? error : new Error("Single sign-on failed") };
-  }
-}
-
-export async function requestPasswordReset(email: string): Promise<{ error?: Error }> {
-  try {
-    const { error } = await authClient.requestPasswordReset({
-      email: email.trim(),
-      redirectTo: "https://openwhispr.com/reset-password",
-    });
-    if (error) {
-      return { error: toAuthActionError(error, "Failed to send reset email") };
-    }
-    return {};
-  } catch (error) {
-    return { error: error instanceof Error ? error : new Error("Failed to send reset email") };
-  }
-}
+// ---- Compatibility stubs -----------------------------------------------
+// Company SSO has no local password or admin console; these keep the settings
+// UI (ProfileSection, EnterpriseConsoleRow) compiling without touching their
+// email/password-account-era code paths in this pass.
 
 export interface AuthActionError extends Error {
   code?: string;
 }
 
-function toAuthActionError(source: unknown, fallbackMessage: string): AuthActionError {
-  if (source instanceof Error) return source as AuthActionError;
-  if (source && typeof source === "object") {
-    const record = source as { message?: string; code?: string };
-    const error: AuthActionError = new Error(record.message || fallbackMessage);
-    if (record.code) error.code = record.code;
-    return error;
-  }
-  return new Error(fallbackMessage);
+export async function hasCredentialAccount(): Promise<boolean> {
+  return false;
 }
 
-export async function updateDisplayName(name: string): Promise<{ error?: AuthActionError }> {
-  try {
-    const { error } = await authClient.updateUser({ name });
-    if (error) return { error: toAuthActionError(error, "Failed to update name") };
-    return {};
-  } catch (error) {
-    return { error: toAuthActionError(error, "Failed to update name") };
-  }
+export async function updateDisplayName(_name: string): Promise<{ error?: AuthActionError }> {
+  return { error: Object.assign(new Error("Display name is managed by your identity provider."), {}) };
 }
 
-export async function changePassword(params: {
+export async function changePassword(_params: {
   currentPassword: string;
   newPassword: string;
   revokeOtherSessions: boolean;
 }): Promise<{ error?: AuthActionError }> {
-  try {
-    const { error } = await authClient.changePassword({
-      currentPassword: params.currentPassword,
-      newPassword: params.newPassword,
-      revokeOtherSessions: params.revokeOtherSessions,
-    });
-    if (error) return { error: toAuthActionError(error, "Failed to change password") };
-    return {};
-  } catch (error) {
-    return { error: toAuthActionError(error, "Failed to change password") };
-  }
+  return { error: Object.assign(new Error("Password is managed by your identity provider."), {}) };
 }
 
-export const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || "https://admin.openwhispr.com";
-
-/**
- * Open the enterprise admin console signed in: the desktop session lives in
- * the app (bearer token), not the user's browser, so a single-use short-lived
- * token carries it across. Verification on the console's /handoff page sets
- * the cross-subdomain session cookie. If token generation fails for any
- * reason, fall back to the bare console URL and let the user sign in there.
- */
 export async function openAdminConsole(): Promise<void> {
-  let url = ADMIN_URL;
-  try {
-    // The generated $fetch types don't discriminate on `throw`, and the
-    // payload arrives bare or under `data` depending on the client version.
-    const result = (await authClient.$fetch("/one-time-token/generate", { throw: true })) as {
-      token?: string;
-      data?: { token?: string } | null;
-    };
-    const token = result.token ?? result.data?.token;
-    if (token) {
-      // The token rides the URL fragment so it never reaches server logs,
-      // proxies, or analytics beacons — the console reads it client-side.
-      url = `${ADMIN_URL}/handoff#token=${encodeURIComponent(token)}`;
-    }
-  } catch {
-    // Fall through to the bare console URL.
-  }
-  openExternalLink(url);
-}
-
-// Cache only successful results; errors fail open without being cached. Cleared
-// in signOut() so a different account never inherits a stale value.
-let credentialAccountCache: boolean | null = null;
-
-export async function hasCredentialAccount(): Promise<boolean> {
-  if (credentialAccountCache !== null) return credentialAccountCache;
-  try {
-    const { data, error } = await authClient.listAccounts();
-    if (error || !data) return true;
-    credentialAccountCache = data.some((account) => account.providerId === "credential");
-    return credentialAccountCache;
-  } catch {
-    return true;
-  }
+  // No hosted admin console under company SSO.
 }

@@ -59,27 +59,18 @@ test("returning-user authentication renders the complete compact onboarding surf
   assert.match(markup, /onboarding-compact-hero/);
   assert.match(markup, /auth\.welcomeTitle/);
   assert.match(markup, /auth\.emailStep\.continueWithoutAccount/);
-  assert.match(markup, /auth\.legal\.terms/);
-  assert.match(markup, /auth\.legal\.privacy/);
+  // This internal (Protein/RapDev) build has no hosted terms/privacy page —
+  // CompactOnboardingFrame hides the legal footer by default rather than
+  // linking to OpenWhispr's own under different branding.
+  assert.doesNotMatch(markup, /auth\.legal\.terms/);
+  assert.doesNotMatch(markup, /auth\.legal\.privacy/);
   assert.doesNotMatch(markup, /onboarding-embedded-auth/);
 });
 
-test("verification success completes auth and backing out signs out before returning", async (t) => {
-  globalThis.__compactAuthTestState = { pendingEmail: null, signOutCount: 0 };
-  t.after(() => {
-    delete globalThis.__compactAuthTestState;
-  });
-
+test("forwards its props straight through to AuthenticationStep", async (t) => {
   const vite = await createRendererServer(t, {
     cachePrefix: "openwhispr-compact-authentication-state-",
-    noExternal: ["react"],
     mockModules: {
-      react: `
-        export function useState() {
-          const state = globalThis.__compactAuthTestState;
-          return [state.pendingEmail, (value) => { state.pendingEmail = value; }];
-        }
-      `,
       "/jsx-dev-runtime": `
         export const Fragment = Symbol.for("react.fragment");
         export function jsxDEV(type, props, key) { return { type, props, key }; }
@@ -87,24 +78,13 @@ test("verification success completes auth and backing out signs out before retur
       "/AuthenticationStep": `
         export default function AuthenticationStep() { return null; }
       `,
-      "/EmailVerificationStep": `
-        export default function EmailVerificationStep() { return null; }
-      `,
-      "/lib/auth": `
-        export async function signOut() {
-          globalThis.__compactAuthTestState.signOutCount += 1;
-        }
-      `,
     },
   });
   const { CompactAuthenticationFlow } = await vite.ssrLoadModule(
     "/components/CompactAuthenticationFlow.tsx"
   );
-  let authCompleteCount = 0;
   const props = {
-    onAuthComplete: () => {
-      authCompleteCount += 1;
-    },
+    onAuthComplete: noop,
     onContinueWithoutAccount: noop,
   };
 
@@ -112,19 +92,5 @@ test("verification success completes auth and backing out signs out before retur
   assert.equal(authStep.type.name, "AuthenticationStep");
   assert.equal(authStep.props.onAuthComplete, props.onAuthComplete);
   assert.equal(authStep.props.onContinueWithoutAccount, props.onContinueWithoutAccount);
-
-  authStep.props.onNeedsVerification("person@example.com");
-  const verificationStep = CompactAuthenticationFlow(props);
-  assert.equal(verificationStep.type.name, "EmailVerificationStep");
-  assert.equal(verificationStep.props.email, "person@example.com");
-
-  verificationStep.props.onBack();
-  await Promise.resolve();
-  assert.equal(globalThis.__compactAuthTestState.signOutCount, 1);
-  assert.equal(CompactAuthenticationFlow(props).type.name, "AuthenticationStep");
-
-  authStep.props.onNeedsVerification("person@example.com");
-  CompactAuthenticationFlow(props).props.onVerified();
-  assert.equal(authCompleteCount, 1);
-  assert.equal(CompactAuthenticationFlow(props).type.name, "AuthenticationStep");
+  assert.equal(authStep.props.onNeedsVerification, undefined);
 });

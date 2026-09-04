@@ -6,6 +6,7 @@ import { compareAppVersions } from "../utils/version.ts";
 // that module pulls the settings/identity stores, whose module scope needs
 // real browser globals, and this file is imported by node-run sync tests.
 import modelRegistryData from "../models/modelRegistryData.json" with { type: "json" };
+import appIdentity from "../config/appIdentity.json" with { type: "json" };
 
 export type PolicyStatus = "idle" | "loading" | "managed" | "unmanaged" | "error";
 
@@ -412,9 +413,15 @@ export function filterModeOptionsByPolicy<T extends { id: InferenceMode }>(
   state: PolicyDecisionSnapshot,
   providerCatalog?: Pick<PolicySelectionCatalog, "byokProviders" | "enterpriseProviders">
 ): T[] {
-  if (state.status === "idle" || state.status === "unmanaged") return options;
+  // Internal (Protein/RapDev) build: OpenWhispr Cloud is never initialized, so
+  // its mode option is never selectable — applied here once rather than at
+  // each of the four scope pickers that build this options array.
+  const available = appIdentity.enableOpenWhisprCloud
+    ? options
+    : options.filter((option) => option.id !== "openwhispr");
+  if (state.status === "idle" || state.status === "unmanaged") return available;
   if (state.status !== "managed" || !state.policy) return [];
-  return options.filter(
+  return available.filter(
     (option) =>
       isModeAllowedByPolicy(state, scope, option.id) &&
       policyModeHasAvailableProvider(state.policy, scope, option.id, providerCatalog)

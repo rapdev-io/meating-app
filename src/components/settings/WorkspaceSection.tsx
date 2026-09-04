@@ -3,6 +3,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { Users, UserPlus, Trash2, LogOut, ChevronDown, Loader2 } from "lucide-react";
 import { useWorkspaceStore } from "../../stores/workspaceStore";
+import APP_CONFIG from "../../config/appIdentity.json";
 import { WorkspacesService } from "../../services/WorkspacesService";
 import { useAuth } from "../../hooks/useAuth";
 import { useDialogs } from "../../hooks/useDialogs";
@@ -60,7 +61,7 @@ export default function WorkspaceSection({ initialSubTab }: Props) {
   const [inviteWorkspaceId, setInviteWorkspaceId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isSignedIn && !loaded) void refresh();
+    if (APP_CONFIG.enableTeams && isSignedIn && !loaded) void refresh();
   }, [isSignedIn, loaded, refresh]);
 
   useEffect(() => {

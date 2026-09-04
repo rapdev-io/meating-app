@@ -41,13 +41,19 @@ try {
   });
 }
 
+// Single source of truth for the internal "Protein" (RapDev) rebrand — see
+// src/config/appIdentity.json. Swapping this file's values (or forking a
+// second one) is the whole surface for retargeting app identity; nothing
+// else should hardcode the app/company name.
+const IDENTITY = require("./src/config/appIdentity.json");
+
 const VALID_CHANNELS = new Set(["development", "staging", "production"]);
 const DEFAULT_OAUTH_PROTOCOL_BY_CHANNEL = {
-  development: "openwhispr-dev",
-  staging: "openwhispr-staging",
-  production: "openwhispr",
+  development: `${IDENTITY.protocol}-dev`,
+  staging: `${IDENTITY.protocol}-staging`,
+  production: IDENTITY.protocol,
 };
-const BASE_WINDOWS_APP_ID = "com.gizmolabs.openwhispr";
+const BASE_WINDOWS_APP_ID = IDENTITY.appId;
 const DEFAULT_AUTH_BRIDGE_PORT = 5199;
 
 function isElectronBinaryExec() {
@@ -82,11 +88,14 @@ const APP_CHANNEL = resolveAppChannel();
 process.env.OPENWHISPR_CHANNEL = APP_CHANNEL;
 
 function configureChannelUserDataPath() {
-  if (APP_CHANNEL === "production") {
-    return;
-  }
-
-  const isolatedPath = path.join(app.getPath("appData"), `OpenWhispr-${APP_CHANNEL}`);
+  // Always explicit (not just for non-production channels) so the resulting
+  // directory name is deterministic and doesn't depend on how Electron's
+  // default app.getName() resolves productName/name across platforms. This
+  // is also what keeps Protein's data separate from an existing OpenWhispr
+  // installation's userData — see docs/architecture notes for the exact path.
+  const baseName =
+    APP_CHANNEL === "production" ? IDENTITY.userDataDirectory : `${IDENTITY.userDataDirectory}-${APP_CHANNEL}`;
+  const isolatedPath = path.join(app.getPath("appData"), baseName);
   app.setPath("userData", isolatedPath);
 }
 
@@ -124,6 +133,12 @@ if (process.platform === "linux" && process.env.XDG_SESSION_TYPE === "wayland") 
 // Set desktop filename so Wayland compositors can match windows to the .desktop entry.
 // This allows XDG portals (e.g. PipeWire) to persist permissions across sessions.
 if (process.platform === "linux") {
+  // NOTE: left as the OpenWhispr package name intentionally — this must match
+  // the .desktop filename electron-builder actually ships on Linux, which
+  // Linux packaging scripts (resources/linux/*.sh, scripts/afterPack.js)
+  // still derive from "open-whispr". Renaming this alone (without updating
+  // those scripts, out of scope for this pass and unverifiable on this
+  // machine) would break Wayland portal permission persistence.
   app.setDesktopName("open-whispr.desktop");
 }
 
@@ -243,8 +258,8 @@ if (!gotSingleInstanceLock) {
 const isLiveWindow = (window) => window && !window.isDestroyed();
 
 // Ensure macOS menus use the proper casing for the app name
-if (process.platform === "darwin" && app.getName() !== "OpenWhispr") {
-  app.setName("OpenWhispr");
+if (process.platform === "darwin" && app.getName() !== IDENTITY.appName) {
+  app.setName(IDENTITY.appName);
 }
 
 // Add global error handling for uncaught exceptions
@@ -301,6 +316,7 @@ const LinuxPortalAudioManager = require("./src/helpers/linuxPortalAudioManager")
 const WindowsLoopbackAudioManager = require("./src/helpers/windowsLoopbackAudioManager");
 const MeetingAecManager = require("./src/helpers/meetingAecManager");
 const MeetingDetectionEngine = require("./src/helpers/meetingDetectionEngine");
+const OidcIdentityManager = require("./src/helpers/oidcIdentityManager");
 const { applyOpenWhisprOriginHeader } = require("./src/helpers/sessionHeaders");
 const { i18nMain, changeLanguage } = require("./src/helpers/i18nMain");
 const { ensureYdotool } = require("./src/helpers/ensureYdotool");
@@ -336,6 +352,7 @@ let linuxPortalAudioManager = null;
 let windowsLoopbackAudioManager = null;
 let meetingAecManager = null;
 let qdrantManager = null;
+let oidcIdentityManager = null;
 let ipcHandlers = null;
 let cliBridge = null;
 let globeKeyAlertShown = false;
@@ -509,6 +526,7 @@ function initializeCoreManagers() {
   calendarReminderScheduler.meetingDetectionEngine = meetingDetectionEngine;
   updateManager = new UpdateManager();
   updateManager.setWindowManager(windowManager);
+  oidcIdentityManager = new OidcIdentityManager();
   windowsKeyManager = new WindowsKeyManager();
   linuxKeyManager = new LinuxKeyManager();
   textEditMonitor = new TextEditMonitor();
@@ -551,6 +569,7 @@ function initializeCoreManagers() {
     linuxPortalAudioManager,
     windowsLoopbackAudioManager,
     meetingAecManager,
+    oidcIdentityManager,
     getQdrantManager: () => qdrantManager,
     getTrayManager: () => trayManager,
     oauthProtocolRegistered: protocolRegistered,
@@ -958,7 +977,7 @@ function startAuthBridgeServer() {
 
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(
-      "<html><body><h3>OpenWhispr sign-in complete.</h3><p>You can close this tab.</p></body></html>"
+      `<html><body><h3>${IDENTITY.appName} sign-in complete.</h3><p>You can close this tab.</p></body></html>`
     );
   });
 

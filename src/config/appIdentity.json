@@ -1,0 +1,14 @@
+{
+  "internalBuild": true,
+  "appName": "Protein",
+  "companyName": "RapDev",
+  "packageName": "protein",
+  "appId": "com.rapdev.protein",
+  "protocol": "protein",
+  "userDataDirectory": "Protein",
+  "enableOpenWhisprAccount": false,
+  "enableOpenWhisprCloud": false,
+  "enableBilling": false,
+  "enableTeams": false,
+  "enableReferrals": false
+}

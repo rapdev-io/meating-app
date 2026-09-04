@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAuth } from "./useAuth";
 import { withSessionRefresh } from "../lib/auth";
+import APP_CONFIG from "../config/appIdentity.json";
 import {
   getUsageState,
   isPastDueUsage,
@@ -90,7 +91,12 @@ export function useUsage(): UseUsageResult | null {
   const checkoutInFlightRef = useRef(false);
   const pendingRefetchRef = useRef(false);
 
-  const accountId = isSignedIn ? (user?.id ?? null) : null;
+  // "Signed in" is company SSO (RapDev/Google), not an OpenWhispr Cloud
+  // account — this hook exists entirely for OpenWhispr's billing/usage API,
+  // which Protein never initializes. Without this gate, every signed-in user
+  // would poll cloud-usage against an unconfigured API URL indefinitely.
+  const accountId =
+    isSignedIn && APP_CONFIG.enableOpenWhisprCloud ? (user?.id ?? null) : null;
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -216,7 +222,7 @@ export function useUsage(): UseUsageResult | null {
     []
   );
 
-  if (!isSignedIn) return null;
+  if (!isSignedIn || !APP_CONFIG.enableOpenWhisprCloud) return null;
 
   const data = state.status === "success" ? state.data : null;
   const wordsUsed = data?.wordsUsed ?? 0;

@@ -711,6 +711,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
     (callback) => (_event, state) => callback(state)
   ),
 
+  // Company SSO (OIDC). Only derived session info (user + expiry + offline-grace
+  // flag) ever crosses this boundary — raw tokens stay in the main process.
+  identitySignIn: () => ipcRenderer.invoke("identity-sign-in"),
+  identitySignOut: () => ipcRenderer.invoke("identity-sign-out"),
+  identityGetSession: () => ipcRenderer.invoke("identity-get-session"),
+  identityRefreshSession: () => ipcRenderer.invoke("identity-refresh-session"),
+  identityIsConfigured: () => ipcRenderer.invoke("identity-is-configured"),
+  onIdentitySessionChanged: registerListener(
+    "identity-session-changed",
+    (callback) => (_event, payload) => callback(payload)
+  ),
+
   // OpenWhispr Cloud API
   cloudHealthCheck: () => ipcRenderer.invoke("cloud-health-check"),
   cloudTranscribe: (audioBuffer, opts) => ipcRenderer.invoke("cloud-transcribe", audioBuffer, opts),

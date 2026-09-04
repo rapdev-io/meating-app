@@ -1,10 +1,10 @@
 {
-  "appId": "com.gizmolabs.openwhispr",
+  "appId": "com.rapdev.protein",
   "afterPack": "scripts/afterPack.js",
-  "productName": "OpenWhispr",
+  "productName": "Protein",
   "protocols": {
-    "name": "OpenWhispr Protocol",
-    "schemes": ["openwhispr"]
+    "name": "Protein Protocol",
+    "schemes": ["protein"]
   },
   "directories": {
     "output": "dist"
@@ -162,11 +162,11 @@
     "extendInfo": {
       "LSUIElement": false,
       "CFBundleIconName": "openwhispr",
-      "NSMicrophoneUsageDescription": "OpenWhispr uses the microphone to capture your voice for transcription.",
-      "NSAudioCaptureUsageDescription": "OpenWhispr uses system audio to capture other participants' audio from calls and meetings.",
-      "NSAccessibilityUsageDescription": "OpenWhispr needs accessibility permissions to paste transcribed text into other applications.",
-      "NSCalendarsUsageDescription": "OpenWhispr reads your calendar to detect upcoming meetings and link meeting notes to events.",
-      "NSCalendarsFullAccessUsageDescription": "OpenWhispr reads your calendar to detect upcoming meetings and link meeting notes to events."
+      "NSMicrophoneUsageDescription": "Protein uses the microphone to capture your voice for transcription.",
+      "NSAudioCaptureUsageDescription": "Protein uses system audio to capture other participants' audio from calls and meetings.",
+      "NSAccessibilityUsageDescription": "Protein needs accessibility permissions to paste transcribed text into other applications.",
+      "NSCalendarsUsageDescription": "Protein reads your calendar to detect upcoming meetings and link meeting notes to events.",
+      "NSCalendarsFullAccessUsageDescription": "Protein reads your calendar to detect upcoming meetings and link meeting notes to events."
     }
   },
   "win": {
@@ -259,7 +259,7 @@
     "include": "resources/nsis/installer.nsh"
   },
   "dmg": {
-    "title": "OpenWhispr",
+    "title": "Protein",
     "icon": "src/assets/icon.icns",
     "window": {
       "width": 540,

@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { OnboardingProgressState } from "./flow";
+import APP_CONFIG from "../../config/appIdentity.json";
 import { Copy, Minus, Square, Undo2, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { useTranslation } from "react-i18next";
@@ -33,8 +34,8 @@ interface CompactOnboardingFrameProps {
   showBrandMark?: boolean;
   showLegalNotice?: boolean;
   /**
-   * AuthenticationStep and EmailVerificationStep also render inside the control
-   * panel's SignInDialog, where the compact window chrome makes no sense: the
+   * AuthenticationStep also renders inside the control panel's SignInDialog,
+   * where the compact window chrome makes no sense: the
    * min-h-screen surface would blow out the dialog, and the --onboarding-*
    * tokens only exist inside .onboarding-canvas. Embedded drops the chrome and
    * lets the dialog size to its content.
@@ -321,7 +322,10 @@ export default function OnboardingShell({
 export function CompactOnboardingFrame({
   children,
   showBrandMark = true,
-  showLegalNotice = true,
+  // No RapDev-hosted terms/privacy page exists yet, and linking to
+  // OpenWhispr's own under Protein branding would be wrong — hide by default
+  // for this internal build rather than either.
+  showLegalNotice = !APP_CONFIG.internalBuild,
   embedded = false,
 }: CompactOnboardingFrameProps) {
   const { t } = useTranslation();

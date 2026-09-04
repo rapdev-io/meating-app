@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useWorkspaceStore } from "../stores/workspaceStore";
 import { useAuth } from "./useAuth";
+import APP_CONFIG from "../config/appIdentity.json";
 import type { Workspace, WorkspaceRole } from "../types/electron";
 
 interface UseWorkspaceResult {
@@ -21,7 +22,10 @@ export function useWorkspace(): UseWorkspaceResult {
   const setActive = useWorkspaceStore((s) => s.setActiveWorkspaceId);
 
   useEffect(() => {
-    if (isSignedIn && !loaded) {
+    // Workspaces are an OpenWhispr Cloud/teams concept; "signed in" here is
+    // company SSO, so never fetch when that feature is off (see useUsage.ts
+    // for the same isSignedIn-no-longer-means-OpenWhispr-account gotcha).
+    if (isSignedIn && !loaded && APP_CONFIG.enableTeams) {
       void refresh();
     }
   }, [isSignedIn, loaded, refresh]);

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import APP_CONFIG from "../config/appIdentity.json";
 import {
   Home,
   MessageSquare,
@@ -76,7 +77,8 @@ export default function ControlPanelSidebar({
   );
 
   const showLimitBanner = upsell === "show" && Boolean(isSignedIn) && Boolean(isOverLimit);
-  const showUpgradeBanner = upsell === "show" && !showLimitBanner && !upgradeDismissed;
+  const showUpgradeBanner =
+    APP_CONFIG.enableBilling && upsell === "show" && !showLimitBanner && !upgradeDismissed;
 
   const agentAllowed = usePolicyStore(isAgentAllowed);
   const policyActionsAllowed = usePolicyStore((state) => isPolicyActionAllowed(state));
@@ -243,7 +245,7 @@ export default function ControlPanelSidebar({
           </div>
         )}
 
-        {isSignedIn && onOpenReferrals && (
+        {APP_CONFIG.enableReferrals && isSignedIn && onOpenReferrals && (
           <button
             onClick={onOpenReferrals}
             aria-label={t("sidebar.referral")}
@@ -263,14 +265,16 @@ export default function ControlPanelSidebar({
           <span className={rowLabelClass}>{t("sidebar.settings")}</span>
         </button>
 
-        <SupportDropdown
-          trigger={
-            <button aria-label={t("sidebar.support")} className={rowButtonClass}>
-              <HelpCircle size={15} className={rowIconClass} />
-              <span className={rowLabelClass}>{t("sidebar.support")}</span>
-            </button>
-          }
-        />
+        {!APP_CONFIG.internalBuild && (
+          <SupportDropdown
+            trigger={
+              <button aria-label={t("sidebar.support")} className={rowButtonClass}>
+                <HelpCircle size={15} className={rowIconClass} />
+                <span className={rowLabelClass}>{t("sidebar.support")}</span>
+              </button>
+            }
+          />
+        )}
 
         <div className="mx-1 h-px bg-border/10 dark:bg-white/6 my-1.5!" />
 

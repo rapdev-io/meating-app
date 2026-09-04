@@ -2,49 +2,59 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { createRendererServer, installBrowserGlobals } = require("../lib/rendererTestHarness");
 
-const AUTH_MODE_INDEX = 0;
-const EMAIL_INDEX = 1;
-const PASSWORD_INDEX = 2;
-const FULL_NAME_INDEX = 3;
-const SSO_DISCOVERY_INDEX = 8;
-const ERROR_INDEX = 9;
+const IS_SIGNING_IN_INDEX = 0;
+const ERROR_INDEX = 1;
 
-function createHarness(values = {}) {
+function createHarness({ authState = { isLoaded: true, isSignedIn: false, user: null }, values = {} } = {}) {
   return {
     cursor: 0,
-    refCursor: 0,
     values,
-    refs: {},
-    discoveryCalls: [],
-    discoveryResult: { exists: false },
-    discoveryError: null,
-    signupResult: {},
+    authState,
+    signInResult: { success: true },
+    signInCalls: 0,
   };
 }
 
-function findElement(node, predicate) {
+function collectStrings(node, out = []) {
+  if (typeof node === "string") {
+    out.push(node);
+    return out;
+  }
+  if (Array.isArray(node)) {
+    node.forEach((child) => collectStrings(child, out));
+    return out;
+  }
+  if (node && typeof node === "object") collectStrings(node.props?.children, out);
+  return out;
+}
+
+// Finds the nearest node with an onClick handler whose rendered subtree
+// contains the given text (translation keys render as their literal key
+// under the mocked t()).
+function findButtonByText(node, text) {
   if (Array.isArray(node)) {
     for (const child of node) {
-      const match = findElement(child, predicate);
+      const match = findButtonByText(child, text);
       if (match) return match;
     }
     return null;
   }
   if (!node || typeof node !== "object") return null;
-  if (predicate(node)) return node;
-  return findElement(node.props?.children, predicate);
+  if (typeof node.props?.onClick === "function" && collectStrings(node).includes(text)) {
+    return node;
+  }
+  return findButtonByText(node.props?.children, text);
+}
+
+function hasText(node, text) {
+  return collectStrings(node).includes(text);
 }
 
 async function settleAsyncHandler() {
   await new Promise((resolve) => setImmediate(resolve));
 }
 
-test("email authentication discovers accounts before choosing sign-in or sign-up", async (t) => {
-  installBrowserGlobals(t, { window: { electronAPI: {} } });
-  t.after(() => {
-    delete globalThis.__authenticationStepHarness;
-  });
-
+async function loadAuthenticationStep(t) {
   const vite = await createRendererServer(t, {
     cachePrefix: "openwhispr-authentication-step-",
     noExternal: ["react", "react-i18next", "lucide-react"],
@@ -65,12 +75,6 @@ test("email authentication discovers accounts before choosing sign-in or sign-up
         }
         export function useCallback(callback) { return callback; }
         export function useEffect() {}
-        export function useRef(initialValue) {
-          const harness = globalThis.__authenticationStepHarness;
-          const index = harness.refCursor++;
-          if (!(index in harness.refs)) harness.refs[index] = { current: initialValue };
-          return harness.refs[index];
-        }
       `,
       "/jsx-dev-runtime": `
         export const Fragment = Symbol.for("react.fragment");
@@ -83,119 +87,134 @@ test("email authentication discovers accounts before choosing sign-in or sign-up
       `,
       "/hooks/useAuth": `
         export function useAuth() {
-          return { isLoaded: true, isSignedIn: false, user: null };
+          return globalThis.__authenticationStepHarness.authState;
         }
       `,
       "/lib/auth": `
-        export const AUTH_URL = "https://auth.example.test";
-        export const authClient = {
-          signUp: {
-            async email(payload) {
-              const harness = globalThis.__authenticationStepHarness;
-              harness.signupPayload = payload;
-              return harness.signupResult;
-            },
-          },
-          signIn: { async email() { return {}; } },
-        };
-        export async function signInWithSocial() { return {}; }
-        export async function signInWithSSO() { return {}; }
-        export function updateLastSignInTime() {}
-      `,
-      "/lib/emailAuthDiscovery": `
-        export async function discoverEmailAuth(email, authUrl) {
+        export let AUTH_URL = globalThis.__authenticationStepHarness.authUrl ?? "configured";
+        export async function signIn() {
           const harness = globalThis.__authenticationStepHarness;
-          harness.discoveryCalls.push({ email, authUrl });
-          if (harness.discoveryError) throw harness.discoveryError;
-          return harness.discoveryResult;
+          harness.signInCalls += 1;
+          return harness.signInResult;
         }
       `,
-      "/utils/logger": `export default { error() {} };`,
-      "/utils/platform": `export function getCachedPlatform() { return "linux"; }`,
-      "/ForgotPasswordView": `export default function ForgotPasswordView() { return null; }`,
       "/OnboardingShell": `
         export function CompactOnboardingFrame(props) { return props.children; }
       `,
       "/ui/button": `export function Button() { return null; }`,
-      "/ui/input": `export function Input() { return null; }`,
       "lucide-react": `
         const Icon = () => null;
-        export { Icon as AlertCircle, Icon as ArrowRight, Icon as Building2, Icon as Check,
-          Icon as Loader2, Icon as ChevronLeft };
+        export { Icon as AlertCircle, Icon as ArrowRight, Icon as Building2, Icon as Check, Icon as Loader2 };
       `,
     },
   });
-  const { default: AuthenticationStep } = await vite.ssrLoadModule(
-    "/components/AuthenticationStep.tsx"
-  );
-  const props = { onAuthComplete() {}, onNeedsVerification() {} };
+  const { default: AuthenticationStep } = await vite.ssrLoadModule("/components/AuthenticationStep.tsx");
+  return AuthenticationStep;
+}
 
-  const render = (harness) => {
-    globalThis.__authenticationStepHarness = harness;
+test("not-configured state offers continuing without an account", async (t) => {
+  installBrowserGlobals(t, { window: { electronAPI: {} } });
+  t.after(() => {
+    delete globalThis.__authenticationStepHarness;
+  });
+
+  const harness = createHarness({ authState: { isLoaded: true, isSignedIn: false, user: null } });
+  harness.authUrl = "";
+  let continuedWithoutAccount = 0;
+  globalThis.__authenticationStepHarness = harness;
+  const AuthenticationStep = await loadAuthenticationStep(t);
+
+  const render = () => {
     harness.cursor = 0;
-    harness.refCursor = 0;
-    return AuthenticationStep(props);
-  };
-  const submitEmail = async (harness) => {
-    const form = findElement(render(harness), (node) => node.type === "form");
-    assert.ok(form, "email form should render");
-    form.props.onSubmit({ preventDefault() {} });
-    await settleAsyncHandler();
+    return AuthenticationStep({
+      onAuthComplete() {},
+      onContinueWithoutAccount: () => {
+        continuedWithoutAccount += 1;
+      },
+    });
   };
 
-  const existingAccount = createHarness({ [EMAIL_INDEX]: "returning@example.com" });
-  existingAccount.discoveryResult = { exists: true };
-  await submitEmail(existingAccount);
-  assert.equal(existingAccount.values[AUTH_MODE_INDEX], "sign-in");
-  assert.deepEqual(existingAccount.discoveryCalls, [
-    { email: "returning@example.com", authUrl: "https://auth.example.test" },
-  ]);
+  const tree = render();
+  assert.ok(hasText(tree, "auth.cloudNotConfigured"));
+  const button = findButtonByText(tree, "auth.getStarted");
+  assert.ok(button, "continue-without-account button should render");
+  button.props.onClick();
+  assert.equal(continuedWithoutAccount, 1);
+});
 
-  const newAccount = createHarness({ [EMAIL_INDEX]: "new@example.com" });
-  await submitEmail(newAccount);
-  assert.equal(newAccount.values[AUTH_MODE_INDEX], "sign-up");
-
-  const missingEndpoint = createHarness({ [EMAIL_INDEX]: "user@selfhosted.example" });
-  missingEndpoint.discoveryResult = null;
-  await submitEmail(missingEndpoint);
-  assert.equal(missingEndpoint.values[AUTH_MODE_INDEX], "sign-up");
-  assert.equal(missingEndpoint.values[ERROR_INDEX], null);
-
-  const unavailableDiscovery = createHarness({ [EMAIL_INDEX]: "user@example.com" });
-  unavailableDiscovery.discoveryError = new Error("offline");
-  await submitEmail(unavailableDiscovery);
-  assert.equal(unavailableDiscovery.values[AUTH_MODE_INDEX], null);
-  assert.equal(unavailableDiscovery.values[ERROR_INDEX], "auth.errors.failedUserCheck");
-
-  const ssoAccount = createHarness({ [EMAIL_INDEX]: "user@example.com" });
-  ssoAccount.discoveryResult = {
-    exists: true,
-    sso: { available: true, required: false, domain: "example.com" },
-  };
-  await submitEmail(ssoAccount);
-  assert.equal(ssoAccount.values[AUTH_MODE_INDEX], null);
-  assert.deepEqual(ssoAccount.values[SSO_DISCOVERY_INDEX], {
-    exists: true,
-    required: false,
-    domain: "example.com",
+test("sign-in failure surfaces the error and re-enables the button", async (t) => {
+  installBrowserGlobals(t, { window: { electronAPI: {} } });
+  t.after(() => {
+    delete globalThis.__authenticationStepHarness;
   });
+  const harness = createHarness();
+  harness.signInResult = { success: false, error: "Access denied for this organization." };
+  globalThis.__authenticationStepHarness = harness;
+  const AuthenticationStep = await loadAuthenticationStep(t);
 
-  const duplicateRace = createHarness({
-    [AUTH_MODE_INDEX]: "sign-up",
-    [EMAIL_INDEX]: "returning@example.com",
-    [PASSWORD_INDEX]: "password123",
-    [FULL_NAME_INDEX]: "Returning User",
-  });
-  duplicateRace.signupResult = {
-    error: {
-      code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL",
-      message: "A localized duplicate-account response",
-    },
+  const render = () => {
+    harness.cursor = 0;
+    return AuthenticationStep({ onAuthComplete() {} });
   };
-  const signupForm = findElement(render(duplicateRace), (node) => node.type === "form");
-  assert.ok(signupForm, "sign-up form should render");
-  await signupForm.props.onSubmit({ preventDefault() {} });
-  assert.equal(duplicateRace.values[AUTH_MODE_INDEX], "sign-in");
-  assert.equal(duplicateRace.values[PASSWORD_INDEX], "");
-  assert.equal(duplicateRace.values[ERROR_INDEX], "auth.errors.accountExistsSignIn");
+
+  const button = findButtonByText(render(), "auth.sso.continueWithSSO");
+  assert.ok(button, "sign-in button should render");
+  await button.props.onClick();
+  await settleAsyncHandler();
+
+  assert.equal(harness.signInCalls, 1);
+  assert.equal(harness.values[IS_SIGNING_IN_INDEX], false);
+  assert.equal(harness.values[ERROR_INDEX], "Access denied for this organization.");
+});
+
+test("sign-in success keeps the pending state until the session updates", async (t) => {
+  installBrowserGlobals(t, { window: { electronAPI: {} } });
+  t.after(() => {
+    delete globalThis.__authenticationStepHarness;
+  });
+  const harness = createHarness();
+  harness.signInResult = { success: true, user: { sub: "abc", email: "a@example.com", name: "A" } };
+  globalThis.__authenticationStepHarness = harness;
+  const AuthenticationStep = await loadAuthenticationStep(t);
+
+  const render = () => {
+    harness.cursor = 0;
+    return AuthenticationStep({ onAuthComplete() {} });
+  };
+
+  const button = findButtonByText(render(), "auth.sso.continueWithSSO");
+  await button.props.onClick();
+  await settleAsyncHandler();
+
+  assert.equal(harness.signInCalls, 1);
+  // onAuthComplete fires from the isSignedIn effect once useAuth reports the
+  // new session (exercised via useEffect, a no-op under this harness) — until
+  // then the button stays in its pending state rather than flashing "idle".
+  assert.equal(harness.values[IS_SIGNING_IN_INDEX], true);
+  assert.equal(harness.values[ERROR_INDEX] ?? null, null);
+});
+
+test("already-signed-in state greets the user and completes on continue", async (t) => {
+  installBrowserGlobals(t, { window: { electronAPI: {} } });
+  t.after(() => {
+    delete globalThis.__authenticationStepHarness;
+  });
+  const harness = createHarness({
+    authState: { isLoaded: true, isSignedIn: true, user: { sub: "abc", email: "a@example.com", name: "Ada" } },
+  });
+  globalThis.__authenticationStepHarness = harness;
+  const AuthenticationStep = await loadAuthenticationStep(t);
+  let completed = 0;
+
+  const render = () => {
+    harness.cursor = 0;
+    return AuthenticationStep({ onAuthComplete: () => (completed += 1) });
+  };
+
+  const tree = render();
+  assert.ok(hasText(tree, "auth.signedIn.welcomeBackName"));
+  const button = findButtonByText(tree, "auth.common.continue");
+  assert.ok(button, "continue button should render");
+  button.props.onClick();
+  assert.equal(completed, 1);
 });

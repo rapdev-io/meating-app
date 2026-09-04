@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePolicyStore } from "../stores/policyStore";
+import APP_CONFIG from "../config/appIdentity.json";
 import {
   Sliders,
   Mic,
@@ -126,7 +127,11 @@ export default function SettingsModal({ open, onOpenChange, initialSection }: Se
         group: t("settingsModal.groups.system"),
       },
     ];
-    return isSignedIn ? items : items.filter((item) => item.id !== "workspace");
+    return items.filter((item) => {
+      if (item.id === "workspace") return isSignedIn && APP_CONFIG.enableTeams;
+      if (item.id === "plansBilling") return APP_CONFIG.enableBilling;
+      return true;
+    });
   }, [t, isSignedIn]);
 
   const resolveSection = (section: string | undefined): SettingsSectionType => {

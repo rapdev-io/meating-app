@@ -1,5 +1,5 @@
 {
-  "name": "open-whispr",
+  "name": "protein",
   "version": "1.9.2",
   "description": "A desktop dictation application using whisper.cpp for speech-to-text transcription",
   "main": "main.js",
@@ -89,8 +89,7 @@
     "desktop-app"
   ],
   "author": {
-    "name": "OpenWhispr Team",
-    "email": "support@openwhispr.com"
+    "name": "RapDev"
   },
   "license": "MIT",
   "devDependencies": {

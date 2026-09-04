@@ -149,6 +149,21 @@ export interface IdentitySession {
   graceExpiresAt?: number;
 }
 
+export interface GoogleDriveStatus {
+  connected: boolean;
+  email?: string | null;
+  folderName?: string | null;
+}
+
+export interface GoogleDriveExportResult {
+  success: boolean;
+  fileId?: string;
+  name?: string;
+  webViewLink?: string;
+  error?: string;
+  code?: string;
+}
+
 export interface TranscriptionItem {
   id: number;
   text: string;
@@ -1636,6 +1651,14 @@ declare global {
         config: any
       ) => Promise<{ success: boolean; text?: string; error?: string }>;
 
+      // RapDev Provided reasoning (same Anthropic API, env-provided key)
+      processRapdevReasoning: (
+        text: string,
+        modelId: string,
+        agentName: string | null,
+        config: any
+      ) => Promise<{ success: boolean; text?: string; error?: string }>;
+
       // Enterprise reasoning (Bedrock, Azure, Vertex)
       processEnterpriseReasoning: (
         text: string,
@@ -2093,6 +2116,14 @@ declare global {
       onIdentitySessionChanged?: (
         callback: (payload: { session: IdentitySession | null }) => void
       ) => () => void;
+
+      // Google Drive export.
+      googleDriveConnect?: () => Promise<{ success: boolean; email?: string; error?: string; code?: string }>;
+      googleDriveDisconnect?: () => Promise<{ success: boolean }>;
+      googleDriveGetStatus?: () => Promise<GoogleDriveStatus>;
+      googleDriveExportTranscript?: (transcriptionId: number) => Promise<GoogleDriveExportResult>;
+      googleDriveExportNote?: (noteId: number) => Promise<GoogleDriveExportResult>;
+      googleDriveExportChat?: (conversationId: number) => Promise<GoogleDriveExportResult>;
 
       // OpenWhispr Cloud API
       cloudTranscribe?: (

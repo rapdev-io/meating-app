@@ -653,6 +653,12 @@
       "clearAllErrorDescription": "Что-то пошло не так. Попробуйте ещё раз.",
       "copyText": "Копировать текст",
       "copyRawTranscript": "Копировать исходную расшифровку",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportSuccessTitle": "Exported to Google Drive",
+      "exportNotConnectedTitle": "Google Drive not connected",
+      "exportNotConnectedDescription": "Connect Google Drive from Integrations first.",
+      "exportFailedTitle": "Export failed",
+      "exportFailedDescription": "Something went wrong exporting to Google Drive. Please try again.",
       "deleteItem": "Удалить",
       "viewRawTranscript": "Показать исходную расшифровку",
       "showInFolder": "Показать в Finder",
@@ -825,6 +831,9 @@
     },
     "corti": {
       "euOnly": "Модели Corti доступны только в регионе ЕС."
+    },
+    "rapdevProvided": {
+      "description": "Предоставлено RapDev — API-ключ не требуется."
     }
   },
   "transcription": {
@@ -1659,23 +1668,6 @@
       },
       "user": "Пользователь",
       "wordsRemaining": "Осталось {{remaining}}",
-      "deleteAccount": {
-        "label": "Удалить аккаунт",
-        "labelDescription": "Навсегда удалить ваш аккаунт и личные облачные данные. Другие локальные пользователи и содержимое рабочих пространств сохранятся.",
-        "button": "Удалить мой аккаунт",
-        "deleting": "Удаление...",
-        "title": "Удалить ваш аккаунт?",
-        "description": "Это навсегда удалит ваш аккаунт OpenWhispr и личные данные. Содержимое рабочих пространств и данные других локальных пользователей останутся на устройстве.",
-        "confirmText": "Удалить аккаунт",
-        "eraseDeviceLabel": "Также удалить все данные с этого устройства",
-        "eraseDeviceDescription": "Удаляет заметки и кэши пространств всех локальных пользователей, загруженные модели, настройки, календари, учётные данные и записи.",
-        "eraseDeviceWarning": "Это удаление данных всего устройства нельзя отменить; оно затрагивает всех локальных пользователей.",
-        "successTitle": "Аккаунт удалён",
-        "successDescription": "Ваш аккаунт и личные данные удалены. Другие локальные пользователи, рабочие пространства, модели и настройки устройства сохранены.",
-        "partialCleanupDescription": "Ваш аккаунт удалён, но локальную очистку не удалось завершить полностью. Другие пользователи и содержимое рабочих пространств сохранены.",
-        "failedTitle": "Ошибка удаления",
-        "failedDescription": "Не удалось завершить удаление аккаунта. Удаление данных всего устройства не запускалось. Попробуйте снова."
-      },
       "profile": {
         "name": {
           "label": "Отображаемое имя",
@@ -1847,9 +1839,14 @@
     "general": {
       "appearance": {
         "auto": "Авто",
+        "colorPalette": "Color Palette",
+        "colorPaletteDescription": "Pick an accent color family for the light/dark theme",
         "dark": "Тёмная",
         "description": "Управляйте внешним видом OpenWhispr",
         "light": "Светлая",
+        "paletteDefault": "Default",
+        "palettePumpkinSpice": "Pumpkin Spice",
+        "paletteSynthwave": "Synthwave",
         "theme": "Тема",
         "themeDescription": "Выберите светлую, тёмную тему или следуйте системным настройкам",
         "title": "Внешний вид"
@@ -2879,6 +2876,9 @@
       "export": "Экспорт",
       "asMarkdown": "Как Markdown",
       "asPlainText": "Как обычный текст",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportMeetingToGoogleDrive": "Sync meeting to Google Drive",
+      "exportedToGoogleDrive": "Exported to Google Drive",
       "asTranscriptText": "Как текстовый файл (.txt)",
       "asSubtitles": "Как субтитры (.srt)",
       "asJson": "Как JSON (.json)",
@@ -3267,6 +3267,7 @@
     "older": "Ранее",
     "archive": "В архив",
     "unarchive": "Из архива",
+    "exportToGoogleDrive": "Export to Google Drive",
     "delete": "Удалить",
     "deleteConfirm": "Эта беседа будет удалена навсегда. Отменить действие невозможно.",
     "editTitle": "Двойной клик для редактирования названия",
@@ -3471,6 +3472,25 @@
   "integrations": {
     "title": "Интеграции",
     "description": "Подключите сервисы для улучшения рабочего процесса",
+    "googleDrive": {
+      "title": "Google Drive",
+      "description": "Export transcripts to a dedicated folder in your Google Drive.",
+      "connectedDescription": "Connected as {{email}} — exports go to \"{{folder}}\".",
+      "connect": "Connect Google Drive",
+      "connected": "Connected",
+      "disconnected": "Google Drive disconnected",
+      "disconnectTitle": "Disconnect Google Drive?",
+      "disconnectDescription": "You can reconnect at any time. Files already exported to Drive are not affected.",
+      "connectFailedTitle": "Couldn't connect Google Drive",
+      "hint": "Only files this app creates are ever visible to it — nothing else in your Drive is accessed.",
+      "errors": {
+        "notConfigured": "Google Drive export is not configured yet.",
+        "generic": "Something went wrong. Please try again.",
+        "timedOut": "Connection timed out waiting for the browser. Please try again.",
+        "browserLaunchFailed": "Could not open your browser to complete sign-in.",
+        "noRefreshToken": "Google didn't grant offline access. Remove Protein from your Google Account's connected apps and try again."
+      }
+    },
     "googleCalendar": {
       "title": "Google Calendar",
       "optional": "Необязательно",

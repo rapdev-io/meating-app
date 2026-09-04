@@ -228,6 +228,12 @@ export interface ReasoningProvider {
 
 export type ReasoningProviders = Record<string, ReasoningProvider>;
 
+// RapDev Provided is a special BYOK-style provider that reuses Anthropic's
+// model catalog verbatim but authenticates with a key baked into the app's
+// env config instead of one the user enters — see rapdevProvided.ts and the
+// "process-rapdev-reasoning" IPC handler.
+export const RAPDEV_PROVIDED_ID = "rapdevProvided";
+
 export type EnterpriseProvider = "bedrock" | "azure" | "vertex";
 export const ENTERPRISE_PROVIDERS: readonly EnterpriseProvider[] = ["bedrock", "azure", "vertex"];
 export function isEnterpriseProvider(value: unknown): value is EnterpriseProvider {
@@ -253,6 +259,7 @@ export function isProviderValidForMode(provider: string, mode: InferenceMode): b
       return (
         provider === "custom" ||
         provider === "openrouter" ||
+        provider === RAPDEV_PROVIDED_ID ||
         modelRegistry.getCloudProviders().some((p) => p.id === provider)
       );
     case "local":
@@ -283,6 +290,15 @@ function buildReasoningProviders(): ReasoningProviders {
         description: m.description,
         descriptionKey: m.descriptionKey,
       })),
+    };
+  }
+
+  // RapDev Provided reuses Anthropic's model catalog as-is — same models,
+  // same capabilities (vision, temperature, ...) — only the key differs.
+  if (providers.anthropic) {
+    providers[RAPDEV_PROVIDED_ID] = {
+      name: "RapDev Provided",
+      models: providers.anthropic.models,
     };
   }
 

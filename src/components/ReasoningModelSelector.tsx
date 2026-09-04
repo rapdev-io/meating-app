@@ -20,6 +20,7 @@ import {
   toReasoningModel,
   modelRegistry,
   isProviderValidForMode,
+  RAPDEV_PROVIDED_ID,
 } from "../models/ModelRegistry";
 import { useTinfoilModels } from "../hooks/useTinfoilModels";
 import { getRemoteProviderIcon } from "../utils/providerIcons";
@@ -48,6 +49,7 @@ const OPENROUTER_TAB = "openrouter";
 const OPENROUTER_KEYS_URL = "https://openrouter.ai/keys";
 
 const CLOUD_PROVIDER_IDS = [
+  RAPDEV_PROVIDED_ID,
   "openai",
   "anthropic",
   "gemini",
@@ -360,7 +362,7 @@ export default function ReasoningModelSelector({
   const cortiApiKey = useSettingsStore((s) => s.cortiApiKey);
   const setCortiApiKey = useSettingsStore((s) => s.setCortiApiKey);
   const [selectedMode, setSelectedMode] = useState<"cloud" | "local">(mode || "cloud");
-  const [selectedCloudProvider, setSelectedCloudProvider] = useState("openai");
+  const [selectedCloudProvider, setSelectedCloudProvider] = useState(RAPDEV_PROVIDED_ID);
   const [selectedLocalProvider, setSelectedLocalProvider] = useState("qwen");
   const policyState = usePolicySnapshot();
   const providerAllowed = useCallback(
@@ -665,6 +667,12 @@ export default function ReasoningModelSelector({
                         helpText=""
                       />
                     </div>
+                  )}
+
+                  {displayedCloudProvider === RAPDEV_PROVIDED_ID && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("reasoning.rapdevProvided.description")}
+                    </p>
                   )}
 
                   {displayedCloudProvider === "corti" && (

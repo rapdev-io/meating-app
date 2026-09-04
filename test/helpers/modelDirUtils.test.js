@@ -37,9 +37,9 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
   function createRedirectedWindowsFixture() {
     setPlatform("win32");
     const home = path.join(tempRoot, "Users", "stan");
-    const legacyRoot = path.join(home, ".cache", "openwhispr");
+    const legacyRoot = path.join(home, ".cache", "protein");
     const redirectedProfile = path.join(tempRoot, "RedirectedUsers", "stan");
-    const redirectedRoot = path.join(redirectedProfile, ".cache", "openwhispr");
+    const redirectedRoot = path.join(redirectedProfile, ".cache", "protein");
     process.env.USERPROFILE = redirectedProfile;
     return { home, legacyRoot, redirectedRoot };
   }
@@ -66,7 +66,7 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
   beforeEach(() => {
     tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "ow-cache-test-"));
     process.env = { ...originalEnv };
-    delete process.env.OPENWHISPR_CACHE_ROOT;
+    delete process.env.PROTEIN_CACHE_ROOT;
     delete process.env.USERPROFILE;
     delete process.env.XDG_CACHE_HOME;
   });
@@ -82,26 +82,26 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
 
   it("pathHasProblematicChars flags non-ASCII and spaces", () => {
     const { pathHasProblematicChars } = loadFresh(path.join(tempRoot, "ascii-user"));
-    assert.strictEqual(pathHasProblematicChars("C:\\Users\\Anton\\.cache\\openwhispr"), false);
-    assert.strictEqual(pathHasProblematicChars("C:\\Users\\Антон\\.cache\\openwhispr"), true);
-    assert.strictEqual(pathHasProblematicChars("C:\\Users\\詩涵\\.cache\\openwhispr"), true);
-    assert.strictEqual(pathHasProblematicChars("C:\\Users\\Stan Shih\\.cache\\openwhispr"), true);
+    assert.strictEqual(pathHasProblematicChars("C:\\Users\\Anton\\.cache\\protein"), false);
+    assert.strictEqual(pathHasProblematicChars("C:\\Users\\Антон\\.cache\\protein"), true);
+    assert.strictEqual(pathHasProblematicChars("C:\\Users\\詩涵\\.cache\\protein"), true);
+    assert.strictEqual(pathHasProblematicChars("C:\\Users\\Stan Shih\\.cache\\protein"), true);
   });
 
-  it("honors OPENWHISPR_CACHE_ROOT when ASCII-safe", () => {
+  it("honors PROTEIN_CACHE_ROOT when ASCII-safe", () => {
     setPlatform("win32");
     const override = path.join(tempRoot, "ascii-cache");
-    process.env.OPENWHISPR_CACHE_ROOT = override;
+    process.env.PROTEIN_CACHE_ROOT = override;
     const { getCacheRoot } = loadFresh(path.join(tempRoot, "使用者", "詩涵"));
     assert.strictEqual(getCacheRoot(), override);
     assert.ok(fs.existsSync(override));
   });
 
-  it("gives OPENWHISPR_CACHE_ROOT precedence over an ASCII-safe Windows home", () => {
+  it("gives PROTEIN_CACHE_ROOT precedence over an ASCII-safe Windows home", () => {
     setPlatform("win32");
     const home = path.join(tempRoot, "Users", "stan");
     const override = path.join(tempRoot, "custom-cache");
-    process.env.OPENWHISPR_CACHE_ROOT = override;
+    process.env.PROTEIN_CACHE_ROOT = override;
 
     const { getCacheRoot } = loadFresh(home);
 
@@ -124,14 +124,14 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
 
     const { getCacheRoot } = loadFresh(home);
 
-    assert.strictEqual(getCacheRoot(), path.join(xdgCacheHome, "openwhispr"));
+    assert.strictEqual(getCacheRoot(), path.join(xdgCacheHome, "protein"));
   });
 
-  it("gives OPENWHISPR_CACHE_ROOT precedence over XDG_CACHE_HOME", () => {
+  it("gives PROTEIN_CACHE_ROOT precedence over XDG_CACHE_HOME", () => {
     setPlatform("linux");
     const home = path.join(tempRoot, "home", "stan");
     const override = path.join(tempRoot, "custom-cache");
-    process.env.OPENWHISPR_CACHE_ROOT = override;
+    process.env.PROTEIN_CACHE_ROOT = override;
     process.env.XDG_CACHE_HOME = path.join(tempRoot, "xdg-cache");
 
     const { getCacheRoot } = loadFresh(home);
@@ -146,7 +146,7 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
 
     const { getCacheRoot } = loadFresh(home);
 
-    assert.strictEqual(getCacheRoot(), path.join(home, ".cache", "openwhispr"));
+    assert.strictEqual(getCacheRoot(), path.join(home, ".cache", "protein"));
   });
 
   it("preserves the macOS home-cache default", () => {
@@ -155,14 +155,14 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
 
     const { getCacheRoot } = loadFresh(home);
 
-    assert.strictEqual(getCacheRoot(), path.join(home, ".cache", "openwhispr"));
+    assert.strictEqual(getCacheRoot(), path.join(home, ".cache", "protein"));
   });
 
-  it("honors OPENWHISPR_CACHE_ROOT on macOS", () => {
+  it("honors PROTEIN_CACHE_ROOT on macOS", () => {
     setPlatform("darwin");
     const home = path.join(tempRoot, "Users", "stan");
     const override = path.join(tempRoot, "custom-cache");
-    process.env.OPENWHISPR_CACHE_ROOT = override;
+    process.env.PROTEIN_CACHE_ROOT = override;
 
     const { getCacheRoot } = loadFresh(home);
 
@@ -178,7 +178,7 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
 
     const { getCacheRoot } = loadFresh(home);
 
-    assert.strictEqual(getCacheRoot(), path.join(programData, "OpenWhispr", "cache"));
+    assert.strictEqual(getCacheRoot(), path.join(programData, "Protein", "cache"));
   });
 
   it("skips an unsafe ProgramData fallback", () => {
@@ -191,14 +191,14 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
 
     const { getCacheRoot } = loadFresh(home);
 
-    assert.strictEqual(getCacheRoot(), path.join(systemDrive, "OpenWhispr", "cache"));
+    assert.strictEqual(getCacheRoot(), path.join(systemDrive, "Protein", "cache"));
   });
 
   it("keeps all model consumers on the selected cache root", () => {
     setPlatform("win32");
     const home = path.join(tempRoot, "Users", "stan");
     const override = path.join(tempRoot, "custom-cache");
-    process.env.OPENWHISPR_CACHE_ROOT = override;
+    process.env.PROTEIN_CACHE_ROOT = override;
 
     const { getCacheRoot, getModelsDirForService } = loadFresh(home);
 
@@ -221,7 +221,7 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
       path.join(tempRoot, "使用者", "詩涵")
     );
     const root = getCacheRoot();
-    assert.strictEqual(root, path.join(programData, "OpenWhispr", "cache"));
+    assert.strictEqual(root, path.join(programData, "Protein", "cache"));
     assert.ok(fs.existsSync(root));
     assert.strictEqual(getModelsDirForService("whisper"), path.join(root, "whisper-models"));
   });
@@ -230,7 +230,7 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
     setPlatform("win32");
     const home = path.join(tempRoot, "Users", "stan");
     const { getCacheRoot } = loadFresh(home);
-    assert.strictEqual(getCacheRoot(), path.join(home, ".cache", "openwhispr"));
+    assert.strictEqual(getCacheRoot(), path.join(home, ".cache", "protein"));
   });
 
   it("migrates legacy model dirs into the safe root and leaves home-based dirs alone", () => {
@@ -239,7 +239,7 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
     process.env.ProgramData = programData;
 
     const home = path.join(tempRoot, "使用者", "詩涵");
-    const legacyRoot = path.join(home, ".cache", "openwhispr");
+    const legacyRoot = path.join(home, ".cache", "protein");
     fs.mkdirSync(path.join(legacyRoot, "whisper-models"), { recursive: true });
     fs.writeFileSync(path.join(legacyRoot, "whisper-models", "ggml-base.bin"), "model");
     fs.mkdirSync(path.join(legacyRoot, "models"), { recursive: true });
@@ -250,7 +250,7 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
     const { getCacheRoot } = loadFresh(home);
     const root = getCacheRoot();
 
-    assert.strictEqual(root, path.join(programData, "OpenWhispr", "cache"));
+    assert.strictEqual(root, path.join(programData, "Protein", "cache"));
     assert.strictEqual(
       fs.readFileSync(path.join(root, "whisper-models", "ggml-base.bin"), "utf8"),
       "model"
@@ -422,11 +422,11 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
     process.env.ProgramData = programData;
 
     const home = path.join(tempRoot, "使用者", "詩涵");
-    const legacyDir = path.join(home, ".cache", "openwhispr", "whisper-models");
+    const legacyDir = path.join(home, ".cache", "protein", "whisper-models");
     fs.mkdirSync(legacyDir, { recursive: true });
     fs.writeFileSync(path.join(legacyDir, "ggml-base.bin"), "old");
 
-    const newDir = path.join(programData, "OpenWhispr", "cache", "whisper-models");
+    const newDir = path.join(programData, "Protein", "cache", "whisper-models");
     fs.mkdirSync(newDir, { recursive: true });
     fs.writeFileSync(path.join(newDir, "ggml-base.bin"), "new");
 
@@ -435,5 +435,87 @@ describe("modelDirUtils cache policy (#1279, #1399)", () => {
 
     assert.strictEqual(fs.readFileSync(path.join(newDir, "ggml-base.bin"), "utf8"), "new");
     assert.strictEqual(fs.readFileSync(path.join(legacyDir, "ggml-base.bin"), "utf8"), "old");
+  });
+
+  describe("OpenWhispr -> Protein cache rename (rebrand)", () => {
+    it("renames an existing ~/.cache/openwhispr to ~/.cache/protein in place", () => {
+      setPlatform("darwin");
+      const home = path.join(tempRoot, "Users", "stan");
+      const legacyRoot = path.join(home, ".cache", "openwhispr");
+      fs.mkdirSync(path.join(legacyRoot, "whisper-models"), { recursive: true });
+      fs.writeFileSync(path.join(legacyRoot, "whisper-models", "ggml-base.bin"), "model");
+      fs.mkdirSync(path.join(legacyRoot, "qdrant-data"), { recursive: true });
+      fs.writeFileSync(path.join(legacyRoot, "qdrant-data", "collection.dat"), "vectors");
+
+      const { getCacheRoot } = loadFresh(home);
+      const root = getCacheRoot();
+
+      assert.strictEqual(root, path.join(home, ".cache", "protein"));
+      assert.strictEqual(
+        fs.readFileSync(path.join(root, "whisper-models", "ggml-base.bin"), "utf8"),
+        "model"
+      );
+      // qdrant-data moves along with the whole-folder rename even though it's
+      // never touched by migrateLegacyModelDirs (that only moves RELOCATED_SUBDIRS).
+      assert.strictEqual(
+        fs.readFileSync(path.join(root, "qdrant-data", "collection.dat"), "utf8"),
+        "vectors"
+      );
+      assert.ok(!fs.existsSync(legacyRoot));
+    });
+
+    it("never overwrites an already-migrated protein cache", () => {
+      setPlatform("darwin");
+      const home = path.join(tempRoot, "Users", "stan");
+      const legacyRoot = path.join(home, ".cache", "openwhispr", "whisper-models");
+      fs.mkdirSync(legacyRoot, { recursive: true });
+      fs.writeFileSync(path.join(legacyRoot, "ggml-base.bin"), "old");
+
+      const newRoot = path.join(home, ".cache", "protein", "whisper-models");
+      fs.mkdirSync(newRoot, { recursive: true });
+      fs.writeFileSync(path.join(newRoot, "ggml-base.bin"), "new");
+
+      const { getCacheRoot } = loadFresh(home);
+      getCacheRoot();
+
+      assert.strictEqual(fs.readFileSync(path.join(newRoot, "ggml-base.bin"), "utf8"), "new");
+      assert.strictEqual(
+        fs.readFileSync(path.join(legacyRoot, "ggml-base.bin"), "utf8"),
+        "old",
+        "the untouched legacy copy is left behind, not deleted"
+      );
+    });
+
+    it("renames a legacy OpenWhispr ProgramData fallback root to Protein", () => {
+      setPlatform("win32");
+      const programData = path.join(tempRoot, "ProgramData");
+      process.env.USERPROFILE = path.join(tempRoot, "Redirected Users", "stan");
+      process.env.ProgramData = programData;
+      const legacyRoot = path.join(programData, "OpenWhispr", "cache");
+      fs.mkdirSync(path.join(legacyRoot, "whisper-models"), { recursive: true });
+      fs.writeFileSync(path.join(legacyRoot, "whisper-models", "ggml-base.bin"), "model");
+
+      const home = path.join(tempRoot, "Users", "stan");
+      const { getCacheRoot } = loadFresh(home);
+      const root = getCacheRoot();
+
+      assert.strictEqual(root, path.join(programData, "Protein", "cache"));
+      assert.strictEqual(
+        fs.readFileSync(path.join(root, "whisper-models", "ggml-base.bin"), "utf8"),
+        "model"
+      );
+      assert.ok(!fs.existsSync(legacyRoot));
+    });
+
+    it("does nothing when there is no legacy cache to migrate", () => {
+      setPlatform("darwin");
+      const home = path.join(tempRoot, "Users", "stan");
+
+      const { getCacheRoot } = loadFresh(home);
+      const root = getCacheRoot();
+
+      assert.strictEqual(root, path.join(home, ".cache", "protein"));
+      assert.ok(!fs.existsSync(path.join(home, ".cache", "openwhispr")));
+    });
   });
 });

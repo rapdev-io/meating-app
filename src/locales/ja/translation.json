@@ -653,6 +653,12 @@
       "clearAllErrorDescription": "問題が発生しました。もう一度お試しください。",
       "copyText": "テキストをコピー",
       "copyRawTranscript": "生の文字起こしをコピー",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportSuccessTitle": "Exported to Google Drive",
+      "exportNotConnectedTitle": "Google Drive not connected",
+      "exportNotConnectedDescription": "Connect Google Drive from Integrations first.",
+      "exportFailedTitle": "Export failed",
+      "exportFailedDescription": "Something went wrong exporting to Google Drive. Please try again.",
       "deleteItem": "削除",
       "viewRawTranscript": "生の文字起こしを表示",
       "showInFolder": "Finderで表示",
@@ -825,6 +831,9 @@
     },
     "corti": {
       "euOnly": "Corti のモデルは EU リージョンでのみ利用できます。"
+    },
+    "rapdevProvided": {
+      "description": "RapDev が提供 — API キーは不要です。"
     }
   },
   "transcription": {
@@ -1655,23 +1664,6 @@
       },
       "user": "ユーザー",
       "wordsRemaining": "残り {{remaining}}",
-      "deleteAccount": {
-        "label": "アカウントを削除",
-        "labelDescription": "アカウントと個人のクラウドデータを完全に削除します。他のローカルユーザーとワークスペース所有のコンテンツは保持されます。",
-        "button": "アカウントを削除",
-        "deleting": "削除中...",
-        "title": "アカウントを削除しますか？",
-        "description": "OpenWhispr アカウントと個人データを完全に削除します。ワークスペース所有のコンテンツと他のローカルユーザーのデータはこのデバイスに残ります。",
-        "confirmText": "アカウントを削除",
-        "eraseDeviceLabel": "このデバイス上のすべてのデータも消去する",
-        "eraseDeviceDescription": "すべてのローカルユーザーのノートとワークスペースキャッシュ、ダウンロード済みモデル、設定、カレンダー接続、認証情報、録音を削除します。",
-        "eraseDeviceWarning": "このデバイス全体の消去は元に戻せず、すべてのローカルユーザーに影響します。",
-        "successTitle": "アカウントが削除されました",
-        "successDescription": "アカウントと個人データが削除されました。他のローカルユーザー、ワークスペース、モデル、デバイス設定は保持されました。",
-        "partialCleanupDescription": "アカウントは削除されましたが、一部のローカルクリーンアップを完了できませんでした。他のユーザーとワークスペース所有のコンテンツは保持されました。",
-        "failedTitle": "削除に失敗しました",
-        "failedDescription": "アカウントの削除を完了できませんでした。デバイス全体の消去は開始されていません。もう一度お試しください。"
-      },
       "profile": {
         "name": {
           "label": "表示名",
@@ -1843,9 +1835,14 @@
     "general": {
       "appearance": {
         "auto": "自動",
+        "colorPalette": "Color Palette",
+        "colorPaletteDescription": "Pick an accent color family for the light/dark theme",
         "dark": "ダーク",
         "description": "OpenWhispr の外観を設定",
         "light": "ライト",
+        "paletteDefault": "Default",
+        "palettePumpkinSpice": "Pumpkin Spice",
+        "paletteSynthwave": "Synthwave",
         "theme": "テーマ",
         "themeDescription": "ライト、ダーク、またはシステムに合わせる",
         "title": "外観"
@@ -2770,6 +2767,9 @@
       "export": "エクスポート",
       "asMarkdown": "Markdown 形式",
       "asPlainText": "プレーンテキスト形式",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportMeetingToGoogleDrive": "Sync meeting to Google Drive",
+      "exportedToGoogleDrive": "Exported to Google Drive",
       "asTranscriptText": "プレーンテキスト (.txt)",
       "asSubtitles": "字幕ファイル (.srt)",
       "asJson": "JSON (.json)",
@@ -3239,6 +3239,7 @@
     "older": "それ以前",
     "archive": "アーカイブ",
     "unarchive": "アーカイブ解除",
+    "exportToGoogleDrive": "Export to Google Drive",
     "delete": "削除",
     "deleteConfirm": "この会話は完全に削除されます。元に戻すことはできません。",
     "editTitle": "ダブルクリックでタイトルを編集",
@@ -3443,6 +3444,25 @@
   "integrations": {
     "title": "連携",
     "description": "サービスを接続してワークフローを強化",
+    "googleDrive": {
+      "title": "Google Drive",
+      "description": "Export transcripts to a dedicated folder in your Google Drive.",
+      "connectedDescription": "Connected as {{email}} — exports go to \"{{folder}}\".",
+      "connect": "Connect Google Drive",
+      "connected": "Connected",
+      "disconnected": "Google Drive disconnected",
+      "disconnectTitle": "Disconnect Google Drive?",
+      "disconnectDescription": "You can reconnect at any time. Files already exported to Drive are not affected.",
+      "connectFailedTitle": "Couldn't connect Google Drive",
+      "hint": "Only files this app creates are ever visible to it — nothing else in your Drive is accessed.",
+      "errors": {
+        "notConfigured": "Google Drive export is not configured yet.",
+        "generic": "Something went wrong. Please try again.",
+        "timedOut": "Connection timed out waiting for the browser. Please try again.",
+        "browserLaunchFailed": "Could not open your browser to complete sign-in.",
+        "noRefreshToken": "Google didn't grant offline access. Remove Protein from your Google Account's connected apps and try again."
+      }
+    },
     "googleCalendar": {
       "title": "Google カレンダー",
       "optional": "任意",

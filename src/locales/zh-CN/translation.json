@@ -653,6 +653,12 @@
       "clearAllErrorDescription": "出了点问题，请重试。",
       "copyText": "复制文本",
       "copyRawTranscript": "复制原始转录",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportSuccessTitle": "Exported to Google Drive",
+      "exportNotConnectedTitle": "Google Drive not connected",
+      "exportNotConnectedDescription": "Connect Google Drive from Integrations first.",
+      "exportFailedTitle": "Export failed",
+      "exportFailedDescription": "Something went wrong exporting to Google Drive. Please try again.",
       "deleteItem": "删除",
       "viewRawTranscript": "查看原始转录",
       "showInFolder": "在访达中显示",
@@ -825,6 +831,9 @@
     },
     "corti": {
       "euOnly": "Corti 模型仅在欧盟地区可用。"
+    },
+    "rapdevProvided": {
+      "description": "由 RapDev 提供 — 无需 API 密钥。"
     }
   },
   "transcription": {
@@ -1655,23 +1664,6 @@
       },
       "user": "用户",
       "wordsRemaining": "剩余 {{remaining}} 个词",
-      "deleteAccount": {
-        "label": "删除账户",
-        "labelDescription": "永久删除您的账户和个人云端数据。其他本地用户和工作区所有的内容将被保留。",
-        "button": "删除我的账户",
-        "deleting": "正在删除...",
-        "title": "删除您的账户？",
-        "description": "这将永久删除您的 OpenWhispr 账户和个人数据。工作区所有的内容及其他本地用户的数据会保留在此设备上。",
-        "confirmText": "删除账户",
-        "eraseDeviceLabel": "同时清除此设备上的所有数据",
-        "eraseDeviceDescription": "删除所有本地用户的笔记和工作区缓存、已下载模型、设置、日历连接、凭据和录音。",
-        "eraseDeviceWarning": "此设备级清除无法撤销，并会影响所有本地用户。",
-        "successTitle": "账户已删除",
-        "successDescription": "您的账户和个人数据已删除。其他本地用户、工作区、模型和设备设置均已保留。",
-        "partialCleanupDescription": "您的账户已删除，但部分本地清理未能完成。其他用户和工作区所有的内容均已保留。",
-        "failedTitle": "删除失败",
-        "failedDescription": "无法完成账户删除。未启动设备级清除。请重试。"
-      },
       "profile": {
         "name": {
           "label": "显示名称",
@@ -1843,9 +1835,14 @@
     "general": {
       "appearance": {
         "auto": "自动",
+        "colorPalette": "Color Palette",
+        "colorPaletteDescription": "Pick an accent color family for the light/dark theme",
         "dark": "深色",
         "description": "控制 OpenWhispr 的外观",
         "light": "浅色",
+        "paletteDefault": "Default",
+        "palettePumpkinSpice": "Pumpkin Spice",
+        "paletteSynthwave": "Synthwave",
         "theme": "主题",
         "themeDescription": "选择浅色、深色或跟随系统",
         "title": "外观"
@@ -2857,6 +2854,9 @@
       "export": "导出",
       "asMarkdown": "导出为 Markdown",
       "asPlainText": "导出为纯文本",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportMeetingToGoogleDrive": "Sync meeting to Google Drive",
+      "exportedToGoogleDrive": "Exported to Google Drive",
       "asTranscriptText": "导出为纯文本 (.txt)",
       "asSubtitles": "导出为字幕 (.srt)",
       "asJson": "导出为 JSON (.json)",
@@ -3239,6 +3239,7 @@
     "older": "更早",
     "archive": "归档",
     "unarchive": "取消归档",
+    "exportToGoogleDrive": "Export to Google Drive",
     "delete": "删除",
     "deleteConfirm": "此对话将被永久删除，无法撤消。",
     "editTitle": "双击编辑标题",
@@ -3443,6 +3444,25 @@
   "integrations": {
     "title": "集成",
     "description": "连接服务以增强您的工作流程",
+    "googleDrive": {
+      "title": "Google Drive",
+      "description": "Export transcripts to a dedicated folder in your Google Drive.",
+      "connectedDescription": "Connected as {{email}} — exports go to \"{{folder}}\".",
+      "connect": "Connect Google Drive",
+      "connected": "Connected",
+      "disconnected": "Google Drive disconnected",
+      "disconnectTitle": "Disconnect Google Drive?",
+      "disconnectDescription": "You can reconnect at any time. Files already exported to Drive are not affected.",
+      "connectFailedTitle": "Couldn't connect Google Drive",
+      "hint": "Only files this app creates are ever visible to it — nothing else in your Drive is accessed.",
+      "errors": {
+        "notConfigured": "Google Drive export is not configured yet.",
+        "generic": "Something went wrong. Please try again.",
+        "timedOut": "Connection timed out waiting for the browser. Please try again.",
+        "browserLaunchFailed": "Could not open your browser to complete sign-in.",
+        "noRefreshToken": "Google didn't grant offline access. Remove Protein from your Google Account's connected apps and try again."
+      }
+    },
     "googleCalendar": {
       "title": "Google 日历",
       "optional": "可选",

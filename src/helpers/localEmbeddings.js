@@ -3,6 +3,7 @@ const os = require("os");
 const path = require("path");
 const debugLogger = require("./debugLogger");
 const onnxWorkerClient = require("./onnxWorkerClient");
+const { CACHE_DIR_NAME, LEGACY_CACHE_DIR_NAME, migrateCacheDirRename } = require("./modelDirUtils");
 
 const MODEL_SUBDIR = "all-MiniLM-L6-v2";
 
@@ -13,10 +14,17 @@ class LocalEmbeddings {
   }
 
   _resolveModelDir() {
+    // App rebrand (OpenWhispr -> Protein): migrate the whole home-cache
+    // folder in place (embedding-models included) before reading its new name.
+    migrateCacheDirRename(
+      path.join(os.homedir(), ".cache", LEGACY_CACHE_DIR_NAME),
+      path.join(os.homedir(), ".cache", CACHE_DIR_NAME)
+    );
+
     const cacheDir = path.join(
       os.homedir(),
       ".cache",
-      "openwhispr",
+      CACHE_DIR_NAME,
       "embedding-models",
       MODEL_SUBDIR
     );

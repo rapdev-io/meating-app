@@ -14,16 +14,51 @@ function ensureDir(dir) {
   return dir;
 }
 
+// App rebrand (OpenWhispr -> Protein): every cache root candidate below is
+// renamed in place from its old "openwhispr"/"OpenWhispr" folder to the new
+// name the first time it's resolved, so existing installs keep their
+// downloaded models and Qdrant/embedding data instead of re-downloading.
+const CACHE_DIR_NAME = "protein";
+const LEGACY_CACHE_DIR_NAME = "openwhispr";
+const CACHE_DIR_DISPLAY_NAME = "Protein";
+const LEGACY_CACHE_DIR_DISPLAY_NAME = "OpenWhispr";
+
+function migrateCacheDirRename(legacyRoot, newRoot) {
+  if (legacyRoot === newRoot || !fs.existsSync(legacyRoot) || fs.existsSync(newRoot)) return;
+
+  try {
+    fs.renameSync(legacyRoot, newRoot);
+  } catch {
+    // Cross-volume rename: copy then remove, so an interrupted copy can
+    // never be mistaken for a fully migrated cache.
+    try {
+      fs.cpSync(legacyRoot, newRoot, { recursive: true });
+      fs.rmSync(legacyRoot, { recursive: true, force: true });
+    } catch {}
+  }
+}
+
 function getAsciiSafeFallbackRoot() {
   const candidates = [
-    path.join(process.env.ProgramData || "C:\\ProgramData", "OpenWhispr", "cache"),
-    path.join(process.env.SystemDrive || "C:", "OpenWhispr", "cache"),
+    {
+      root: path.join(process.env.ProgramData || "C:\\ProgramData", CACHE_DIR_DISPLAY_NAME, "cache"),
+      legacy: path.join(
+        process.env.ProgramData || "C:\\ProgramData",
+        LEGACY_CACHE_DIR_DISPLAY_NAME,
+        "cache"
+      ),
+    },
+    {
+      root: path.join(process.env.SystemDrive || "C:", CACHE_DIR_DISPLAY_NAME, "cache"),
+      legacy: path.join(process.env.SystemDrive || "C:", LEGACY_CACHE_DIR_DISPLAY_NAME, "cache"),
+    },
   ];
 
-  for (const candidate of candidates) {
-    if (pathHasProblematicChars(candidate)) continue;
+  for (const { root, legacy } of candidates) {
+    if (pathHasProblematicChars(root)) continue;
+    migrateCacheDirRename(legacy, root);
     try {
-      return ensureDir(candidate);
+      return ensureDir(root);
     } catch {}
   }
 
@@ -31,21 +66,25 @@ function getAsciiSafeFallbackRoot() {
 }
 
 function getPreferredCacheRoot(homeCache) {
-  if (process.env.OPENWHISPR_CACHE_ROOT) {
-    return process.env.OPENWHISPR_CACHE_ROOT;
+  if (process.env.PROTEIN_CACHE_ROOT) {
+    return process.env.PROTEIN_CACHE_ROOT;
   }
 
   if (process.platform === "win32") {
     const redirectedProfile = process.env.USERPROFILE;
     if (redirectedProfile && path.isAbsolute(redirectedProfile)) {
-      return path.join(redirectedProfile, ".cache", "openwhispr");
+      const root = path.join(redirectedProfile, ".cache", CACHE_DIR_NAME);
+      migrateCacheDirRename(path.join(redirectedProfile, ".cache", LEGACY_CACHE_DIR_NAME), root);
+      return root;
     }
   }
 
   if (process.platform === "linux") {
     const xdgCacheHome = process.env.XDG_CACHE_HOME;
     if (xdgCacheHome && path.isAbsolute(xdgCacheHome)) {
-      return path.join(xdgCacheHome, "openwhispr");
+      const root = path.join(xdgCacheHome, CACHE_DIR_NAME);
+      migrateCacheDirRename(path.join(xdgCacheHome, LEGACY_CACHE_DIR_NAME), root);
+      return root;
     }
   }
 
@@ -122,7 +161,8 @@ function migrateLegacyModelDirs(legacyRoot, targetRoot) {
 
 function getCacheRoot() {
   const homeDir = app?.getPath?.("home") || os.homedir();
-  const homeCache = path.join(homeDir, ".cache", "openwhispr");
+  const homeCache = path.join(homeDir, ".cache", CACHE_DIR_NAME);
+  migrateCacheDirRename(path.join(homeDir, ".cache", LEGACY_CACHE_DIR_NAME), homeCache);
   let targetRoot = getPreferredCacheRoot(homeCache);
 
   if (process.platform === "win32" && pathHasProblematicChars(targetRoot)) {
@@ -141,4 +181,7 @@ module.exports = {
   getCacheRoot,
   getModelsDirForService,
   pathHasProblematicChars,
+  migrateCacheDirRename,
+  CACHE_DIR_NAME,
+  LEGACY_CACHE_DIR_NAME,
 };

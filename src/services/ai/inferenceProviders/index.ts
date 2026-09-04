@@ -1,5 +1,6 @@
 import type { InferenceProvider } from "./types";
 import { anthropicProvider } from "./anthropic";
+import { rapdevProvidedProvider } from "./rapdevProvided";
 import { geminiProvider } from "./gemini";
 import { groqProvider } from "./groq";
 import { localProvider } from "./local";
@@ -15,6 +16,7 @@ export const PROVIDER_REGISTRY: Readonly<Record<string, InferenceProvider>> = Ob
   custom: openaiProvider,
   openrouter: openaiProvider,
   anthropic: anthropicProvider,
+  rapdevProvided: rapdevProvidedProvider,
   gemini: geminiProvider,
   groq: groqProvider,
   tinfoil: tinfoilProvider,

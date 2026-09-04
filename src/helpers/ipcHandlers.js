@@ -32,6 +32,75 @@ const { resolveSystemDefaultMicrophone } = require("./systemDefaultMicrophone");
 // packaged, and the route resolver only needs {id, baseUrl} per provider.
 const transcriptionProviderBaseUrls = () =>
   require("../models/modelRegistryData.json").transcriptionProviders;
+
+// Shared by "process-anthropic-reasoning" (BYOK key) and
+// "process-rapdev-reasoning" (RapDev-provided key) — same Anthropic Messages
+// API call, they only differ in where the API key comes from.
+async function callAnthropicMessagesApi(proxyFetchFn, apiKey, text, modelId, config) {
+  if (!modelId) {
+    throw new Error("No model specified for Anthropic API call");
+  }
+
+  const systemPrompt = config?.systemPrompt || "";
+  const screenContext = config?.screenContext;
+  const userContent = screenContext
+    ? [
+        { type: "text", text },
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: screenContext.mediaType,
+            data: screenContext.data,
+          },
+        },
+      ]
+    : text;
+
+  // Claude models from Opus 4.7 onward reject `temperature` with a 400;
+  // the renderer derives support from the model registry.
+  const useTemperature = config?.supportsTemperature === true;
+  const requestBody = {
+    model: modelId,
+    messages: [{ role: "user", content: userContent }],
+    system: systemPrompt,
+    max_tokens: config?.maxTokens || Math.max(100, Math.min(text.length * 2, 4096)),
+    ...(useTemperature ? { temperature: config?.temperature ?? 0.3 } : {}),
+  };
+
+  const response = await proxyFetchFn("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorData = { error: response.statusText };
+    try {
+      errorData = JSON.parse(errorText);
+    } catch {
+      errorData = { error: errorText || response.statusText };
+    }
+    throw new Error(
+      errorData.error?.message || errorData.error || `Anthropic API error: ${response.status}`
+    );
+  }
+
+  const data = await response.json();
+  if (config?.requireCompleteOutput && data.stop_reason === "max_tokens") {
+    throw new Error("Model output was truncated before the selection edit completed");
+  }
+  const outputText = extractAnthropicText(data);
+  if (outputText === null) {
+    throw new Error(describeMissingAnthropicText(data));
+  }
+  return outputText;
+}
 // ipcMain.handle keeps only the message when a promise rejects, dropping custom
 // props — proxy handlers return {error, code, messageKey} so the renderer can
 // rebuild the error.
@@ -587,6 +656,7 @@ class IPCHandlers {
     this.windowsLoopbackAudioManager = managers.windowsLoopbackAudioManager;
     this.meetingAecManager = managers.meetingAecManager;
     this.oidcIdentityManager = managers.oidcIdentityManager;
+    this.googleDriveManager = managers.googleDriveManager;
     this.getQdrantManager = managers.getQdrantManager;
     this.oauthProtocolRegistered = managers.oauthProtocolRegistered === true;
     this.oauthProtocol = managers.oauthProtocol || "openwhispr";
@@ -3629,12 +3699,16 @@ class IPCHandlers {
 
       // These caches are not owned by one account. Remove them only through
       // the explicit device-erasure path, never during normal account deletion.
-      const homeCacheRoot = path.join(os.homedir(), ".cache", "openwhispr");
-      for (const cacheName of ["embedding-models", "qdrant-data", "qdrant-data-dev", "yt-dlp"]) {
-        try {
-          fs.rmSync(path.join(homeCacheRoot, cacheName), { recursive: true, force: true });
-        } catch (e) {
-          errors.push(`${cacheName} cache: ${e.message}`);
+      // Both roots are swept: a not-yet-migrated legacy "openwhispr" cache
+      // (see modelDirUtils.js) must be erased too, not just its "protein" successor.
+      for (const dirName of ["protein", "openwhispr"]) {
+        const homeCacheRoot = path.join(os.homedir(), ".cache", dirName);
+        for (const cacheName of ["embedding-models", "qdrant-data", "qdrant-data-dev", "yt-dlp"]) {
+          try {
+            fs.rmSync(path.join(homeCacheRoot, cacheName), { recursive: true, force: true });
+          } catch (e) {
+            errors.push(`${cacheName} cache: ${e.message}`);
+          }
         }
       }
 
@@ -4841,80 +4915,46 @@ class IPCHandlers {
       async (event, text, modelId, _agentName, config) => {
         try {
           const apiKey = this.environmentManager.getAnthropicKey();
-
           if (!apiKey) {
             throw new Error("Anthropic API key not configured");
           }
-
-          const systemPrompt = config?.systemPrompt || "";
-          const userPrompt = text;
-
-          if (!modelId) {
-            throw new Error("No model specified for Anthropic API call");
-          }
-
-          const screenContext = config?.screenContext;
-          const userContent = screenContext
-            ? [
-                { type: "text", text: userPrompt },
-                {
-                  type: "image",
-                  source: {
-                    type: "base64",
-                    media_type: screenContext.mediaType,
-                    data: screenContext.data,
-                  },
-                },
-              ]
-            : userPrompt;
-
-          // Claude models from Opus 4.7 onward reject `temperature` with a 400;
-          // the renderer derives support from the model registry.
-          const useTemperature = config?.supportsTemperature === true;
-          const requestBody = {
-            model: modelId,
-            messages: [{ role: "user", content: userContent }],
-            system: systemPrompt,
-            max_tokens: config?.maxTokens || Math.max(100, Math.min(text.length * 2, 4096)),
-            ...(useTemperature ? { temperature: config?.temperature ?? 0.3 } : {}),
-          };
-
-          const response = await proxyFetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-API-Key": apiKey,
-              "anthropic-version": "2023-06-01",
-            },
-            body: JSON.stringify(requestBody),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            let errorData = { error: response.statusText };
-            try {
-              errorData = JSON.parse(errorText);
-            } catch {
-              errorData = { error: errorText || response.statusText };
-            }
-            throw new Error(
-              errorData.error?.message ||
-                errorData.error ||
-                `Anthropic API error: ${response.status}`
-            );
-          }
-
-          const data = await response.json();
-          if (config?.requireCompleteOutput && data.stop_reason === "max_tokens") {
-            throw new Error("Model output was truncated before the selection edit completed");
-          }
-          const outputText = extractAnthropicText(data);
-          if (outputText === null) {
-            throw new Error(describeMissingAnthropicText(data));
-          }
+          const outputText = await callAnthropicMessagesApi(
+            proxyFetch,
+            apiKey,
+            text,
+            modelId,
+            config
+          );
           return { success: true, text: outputText };
         } catch (error) {
           debugLogger.error("Anthropic reasoning error:", error);
+          return { success: false, error: error.message };
+        }
+      }
+    );
+
+    // RapDev Provided: same Anthropic API, keyed with RAPDEV_ANTHROPIC_API_KEY
+    // instead of a user-entered BYOK key. That env var is deliberately not in
+    // SECRET_KEYS/BYOK_API_KEYS (see environment.js) — it's read straight from
+    // process.env here, main-process only, and never sent to the renderer.
+    ipcMain.handle(
+      "process-rapdev-reasoning",
+      async (event, text, modelId, _agentName, config) => {
+        try {
+          const apiKey = process.env.RAPDEV_ANTHROPIC_API_KEY;
+          if (!apiKey) {
+            throw new Error("RapDev Provided is not configured on this build");
+          }
+          const outputText = await callAnthropicMessagesApi(
+            proxyFetch,
+            apiKey,
+            text,
+            modelId,
+            config
+          );
+          return { success: true, text: outputText };
+        } catch (error) {
+          debugLogger.error("RapDev Provided reasoning error:", error);
           return { success: false, error: error.message };
         }
       }
@@ -5524,6 +5564,107 @@ class IPCHandlers {
     });
 
     ipcMain.handle("identity-is-configured", () => Boolean(this.oidcIdentityManager?.isConfigured()));
+
+    ipcMain.handle("google-drive-connect", async () => {
+      if (!this.googleDriveManager) return { success: false, error: "NOT_CONFIGURED" };
+      return this.googleDriveManager.connect();
+    });
+
+    ipcMain.handle("google-drive-disconnect", async () => {
+      if (!this.googleDriveManager) return { success: true };
+      return this.googleDriveManager.disconnect();
+    });
+
+    ipcMain.handle("google-drive-get-status", async () => {
+      if (!this.googleDriveManager) return { connected: false };
+      return this.googleDriveManager.getStatus();
+    });
+
+    ipcMain.handle("google-drive-export-transcript", async (_event, transcriptionId) => {
+      if (!this.googleDriveManager) {
+        return { success: false, error: "NOT_CONFIGURED", code: "NOT_CONFIGURED" };
+      }
+      if (typeof transcriptionId !== "number" || !Number.isFinite(transcriptionId)) {
+        return { success: false, error: "Invalid transcription id", code: "INVALID_ARGUMENT" };
+      }
+      let row;
+      try {
+        row = this.databaseManager.getTranscriptionById(transcriptionId);
+      } catch (error) {
+        return { success: false, error: error.message, code: "DATABASE_ERROR" };
+      }
+      if (!row) {
+        return { success: false, error: "Transcription not found", code: "NOT_FOUND" };
+      }
+      return this.googleDriveManager.exportTranscript({
+        text: row.text,
+        timestamp: row.timestamp,
+        source: "Protein",
+      });
+    });
+
+    ipcMain.handle("google-drive-export-note", async (_event, noteId) => {
+      if (!this.googleDriveManager) {
+        return { success: false, error: "NOT_CONFIGURED", code: "NOT_CONFIGURED" };
+      }
+      if (typeof noteId !== "number" || !Number.isFinite(noteId)) {
+        return { success: false, error: "Invalid note id", code: "INVALID_ARGUMENT" };
+      }
+      let note;
+      try {
+        note = this.databaseManager.getNote(noteId);
+      } catch (error) {
+        return { success: false, error: error.message, code: "DATABASE_ERROR" };
+      }
+      if (!note) {
+        return { success: false, error: "Note not found", code: "NOT_FOUND" };
+      }
+      // A meeting note carries both the AI notes (content/enhanced_content)
+      // and the raw meeting transcript in separate columns; exporting only
+      // `content` silently dropped the transcript half of the record. Combine
+      // both into one document, since from the user's side this is a single
+      // "meeting", not two independent artifacts.
+      const notesBody = (note.enhanced_content || note.content || "").trim();
+      const transcriptBody = (note.transcript || "").trim();
+      const sections = [];
+      if (notesBody) sections.push(`## Notes\n\n${notesBody}`);
+      if (transcriptBody) sections.push(`## Transcript\n\n${transcriptBody}`);
+      const text = sections.length > 0 ? sections.join("\n\n") : notesBody;
+      return this.googleDriveManager.exportTranscript({
+        text,
+        timestamp: note.created_at,
+        title: note.title,
+        source: "Protein",
+      });
+    });
+
+    ipcMain.handle("google-drive-export-chat", async (_event, conversationId) => {
+      if (!this.googleDriveManager) {
+        return { success: false, error: "NOT_CONFIGURED", code: "NOT_CONFIGURED" };
+      }
+      if (typeof conversationId !== "number" || !Number.isFinite(conversationId)) {
+        return { success: false, error: "Invalid conversation id", code: "INVALID_ARGUMENT" };
+      }
+      let conversation;
+      try {
+        conversation = this.databaseManager.getAgentConversation(conversationId);
+      } catch (error) {
+        return { success: false, error: error.message, code: "DATABASE_ERROR" };
+      }
+      if (!conversation) {
+        return { success: false, error: "Conversation not found", code: "NOT_FOUND" };
+      }
+      const transcript = (conversation.messages || [])
+        .filter((message) => message.role !== "system")
+        .map((message) => `**${message.role === "user" ? "You" : "Agent"}:** ${message.content}`)
+        .join("\n\n");
+      return this.googleDriveManager.exportTranscript({
+        text: transcript || "(No messages)",
+        timestamp: conversation.created_at,
+        title: conversation.title,
+        source: "Protein",
+      });
+    });
 
     ipcMain.handle("auth-clear-session", async (event) => {
       try {

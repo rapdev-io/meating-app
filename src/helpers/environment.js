@@ -20,7 +20,19 @@ const SECRET_KEYS = [
   "BEDROCK_SESSION_TOKEN",
   "AZURE_OPENAI_API_KEY",
   "VERTEX_API_KEY",
-  "OIDC_CLIENT_SECRET",
+  // OIDC_CLIENT_SECRET / GOOGLE_DRIVE_CLIENT_SECRET are deliberately NOT here
+  // (and not in PERSISTED_KEYS below either) — same as GOOGLE_CALENDAR_CLIENT_SECRET.
+  // These are admin/deployment config set once in .env, not a runtime user
+  // setting; putting them through this list means every settings-save snapshots
+  // whatever is in process.env at that moment into userData/.env (or, for
+  // SECRET_KEYS, migrates it into encrypted storage) — and that snapshot then
+  // permanently wins over any later edit to the real .env file.
+  //
+  // RAPDEV_ANTHROPIC_API_KEY is the same kind of deploy-time secret: it backs
+  // the "RapDev Provided" reasoning provider (process-rapdev-reasoning in
+  // ipcHandlers.js) and is read straight from process.env there — never added
+  // here, so it's never encrypted/persisted alongside user BYOK keys and never
+  // exposed to the renderer via a get-*-key IPC channel.
 ];
 
 const SECRET_KEY_SET = new Set(SECRET_KEYS);
@@ -60,14 +72,9 @@ const PERSISTED_KEYS = [
   "AZURE_OPENAI_API_VERSION",
   "VERTEX_PROJECT",
   "VERTEX_LOCATION",
-  "OIDC_ISSUER_URL",
-  "OIDC_CLIENT_ID",
-  "OIDC_SCOPES",
-  "OIDC_ALLOWED_DOMAIN",
-  "OIDC_ALLOWED_TENANT",
-  "OIDC_TENANT_CLAIM",
-  "OIDC_REDIRECT_PORT",
-  "SSO_OFFLINE_GRACE_MS",
+  // OIDC_* / GOOGLE_DRIVE_CLIENT_ID also deliberately excluded — see the
+  // comment by SECRET_KEYS above. They're read straight from .env by
+  // oidcIdentityManager.js / googleDriveManager.js at the point of use.
 ];
 
 // Module-level so writes are serialized across all instances — hotkeyManager

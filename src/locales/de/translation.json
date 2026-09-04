@@ -641,6 +641,12 @@
       },
       "copyText": "Text kopieren",
       "copyRawTranscript": "Rohtranskript kopieren",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportSuccessTitle": "Exported to Google Drive",
+      "exportNotConnectedTitle": "Google Drive not connected",
+      "exportNotConnectedDescription": "Connect Google Drive from Integrations first.",
+      "exportFailedTitle": "Export failed",
+      "exportFailedDescription": "Something went wrong exporting to Google Drive. Please try again.",
       "deleteItem": "Löschen",
       "viewRawTranscript": "Rohtranskript anzeigen",
       "showInFolder": "Im Finder anzeigen",
@@ -825,6 +831,9 @@
     },
     "corti": {
       "euOnly": "Corti-Modelle sind nur in der EU-Region verfügbar."
+    },
+    "rapdevProvided": {
+      "description": "Bereitgestellt von RapDev — kein API-Schlüssel erforderlich."
     }
   },
   "transcription": {
@@ -1944,23 +1953,6 @@
       },
       "user": "Benutzer",
       "wordsRemaining": "{{remaining}} verbleibend",
-      "deleteAccount": {
-        "label": "Konto löschen",
-        "labelDescription": "Konto und persönliche Cloud-Daten dauerhaft löschen. Andere lokale Benutzer und Arbeitsbereichsdaten bleiben erhalten.",
-        "button": "Mein Konto löschen",
-        "deleting": "Wird gelöscht...",
-        "title": "Konto löschen?",
-        "description": "Dies löscht dauerhaft Ihr OpenWhispr-Konto und Ihre persönlichen Daten. Arbeitsbereichsdaten und Daten anderer lokaler Benutzer bleiben auf diesem Gerät erhalten.",
-        "confirmText": "Konto löschen",
-        "eraseDeviceLabel": "Auch alle Daten von diesem Gerät löschen",
-        "eraseDeviceDescription": "Löscht Notizen und Arbeitsbereichscaches aller lokalen Benutzer, heruntergeladene Modelle, Einstellungen, Kalenderverbindungen, Anmeldedaten und Aufnahmen.",
-        "eraseDeviceWarning": "Diese geräteweite Löschung kann nicht rückgängig gemacht werden und betrifft alle lokalen Benutzer.",
-        "successTitle": "Konto gelöscht",
-        "successDescription": "Ihr Konto und Ihre persönlichen Daten wurden gelöscht. Andere lokale Benutzer, Arbeitsbereiche, Modelle und Geräteeinstellungen blieben erhalten.",
-        "partialCleanupDescription": "Ihr Konto wurde gelöscht, aber ein Teil der lokalen Bereinigung konnte nicht abgeschlossen werden. Andere Benutzer und Arbeitsbereichsdaten blieben erhalten.",
-        "failedTitle": "Löschung fehlgeschlagen",
-        "failedDescription": "Die Kontolöschung konnte nicht abgeschlossen werden. Es wurde keine geräteweite Löschung gestartet. Bitte versuchen Sie es erneut."
-      },
       "profile": {
         "name": {
           "label": "Anzeigename",
@@ -2132,9 +2124,14 @@
     "general": {
       "appearance": {
         "auto": "Auto",
+        "colorPalette": "Color Palette",
+        "colorPaletteDescription": "Pick an accent color family for the light/dark theme",
         "dark": "Dunkel",
         "description": "Steuern Sie das Erscheinungsbild von OpenWhispr",
         "light": "Hell",
+        "paletteDefault": "Default",
+        "palettePumpkinSpice": "Pumpkin Spice",
+        "paletteSynthwave": "Synthwave",
         "theme": "Design",
         "themeDescription": "Wählen Sie zwischen Hell, Dunkel oder Systemstandard",
         "title": "Darstellung"
@@ -2818,6 +2815,7 @@
     "older": "Älter",
     "archive": "Archivieren",
     "unarchive": "Dearchivieren",
+    "exportToGoogleDrive": "Export to Google Drive",
     "delete": "Löschen",
     "deleteConfirm": "Diese Unterhaltung wird dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
     "editTitle": "Doppelklick zum Bearbeiten des Titels",
@@ -3068,6 +3066,9 @@
       "export": "Exportieren",
       "asMarkdown": "Als Markdown",
       "asPlainText": "Als Klartext",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportMeetingToGoogleDrive": "Sync meeting to Google Drive",
+      "exportedToGoogleDrive": "Exported to Google Drive",
       "asTranscriptText": "Als Textdatei (.txt)",
       "asSubtitles": "Als Untertitel (.srt)",
       "asJson": "Als JSON (.json)",
@@ -3608,6 +3609,25 @@
   "integrations": {
     "title": "Integrationen",
     "description": "Verbinde Dienste, um deinen Workflow zu verbessern",
+    "googleDrive": {
+      "title": "Google Drive",
+      "description": "Export transcripts to a dedicated folder in your Google Drive.",
+      "connectedDescription": "Connected as {{email}} — exports go to \"{{folder}}\".",
+      "connect": "Connect Google Drive",
+      "connected": "Connected",
+      "disconnected": "Google Drive disconnected",
+      "disconnectTitle": "Disconnect Google Drive?",
+      "disconnectDescription": "You can reconnect at any time. Files already exported to Drive are not affected.",
+      "connectFailedTitle": "Couldn't connect Google Drive",
+      "hint": "Only files this app creates are ever visible to it — nothing else in your Drive is accessed.",
+      "errors": {
+        "notConfigured": "Google Drive export is not configured yet.",
+        "generic": "Something went wrong. Please try again.",
+        "timedOut": "Connection timed out waiting for the browser. Please try again.",
+        "browserLaunchFailed": "Could not open your browser to complete sign-in.",
+        "noRefreshToken": "Google didn't grant offline access. Remove Protein from your Google Account's connected apps and try again."
+      }
+    },
     "googleCalendar": {
       "title": "Google Calendar",
       "optional": "Optional",

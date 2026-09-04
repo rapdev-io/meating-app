@@ -28,7 +28,6 @@ import {
   RotateCw,
   BookOpen,
   Copy,
-  Trash2,
   Info,
   MessageSquare,
   FileAudio,
@@ -38,9 +37,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { AUTH_URL, signOut } from "../lib/auth";
-import { deleteAccount } from "../lib/accountDeletionRequest";
-import { executeAccountDeletion } from "../lib/accountDeletionFlow";
-import { getValidatedAuthGeneration } from "../lib/authRequestContext";
 import { useBillingPortal } from "../hooks/useBillingPortal";
 import MicPermissionWarning from "./ui/MicPermissionWarning";
 import MicrophoneSettings from "./ui/MicrophoneSettings";
@@ -1199,8 +1195,8 @@ export default function SettingsPage({
   const [isRemovingModels, setIsRemovingModels] = useState(false);
   const [cachePathHint, setCachePathHint] = useState(
     typeof navigator !== "undefined" && /Windows/i.test(navigator.userAgent)
-      ? "%USERPROFILE%\\.cache\\openwhispr"
-      : "~/.cache/openwhispr"
+      ? "%USERPROFILE%\\.cache\\protein"
+      : "~/.cache/protein"
   );
   useEffect(() => {
     window.electronAPI
@@ -1307,7 +1303,7 @@ export default function SettingsPage({
     refreshYdotoolStatus();
   }, [refreshYdotoolStatus]);
 
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, colorPalette, setColorPalette } = useTheme();
   const usage = useUsage();
   const billingWorkspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -1709,9 +1705,6 @@ export default function SettingsPage({
     isWorkspaceCovered,
   });
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
-  const [eraseDeviceData, setEraseDeviceData] = useState(false);
   const { openBillingPortal, isOpening: isOpeningBilling } = useBillingPortal(usage);
   const [billingState, setBillingState] = useState<Record<string, boolean>>({
     pro: true,
@@ -1816,67 +1809,6 @@ export default function SettingsPage({
       setIsSigningOut(false);
     }
   }, [showAlertDialog, t]);
-
-  const handleDeleteAccount = useCallback(() => {
-    setEraseDeviceData(false);
-    setIsDeleteAccountDialogOpen(true);
-  }, []);
-
-  const confirmDeleteAccount = useCallback(async () => {
-    const accountId = user?.id;
-    const authGeneration = getValidatedAuthGeneration();
-    if (!accountId || authGeneration == null) {
-      showAlertDialog({
-        title: t("settingsPage.account.deleteAccount.failedTitle"),
-        description: t("settingsPage.account.deleteAccount.failedDescription"),
-      });
-      return;
-    }
-
-    setIsDeletingAccount(true);
-    try {
-      const result = await executeAccountDeletion({
-        eraseDeviceData,
-        dependencies: {
-          deleteRemoteAccount: deleteAccount,
-          deleteLocalAccountData: async () => {
-            const cleanup = await window.electronAPI?.deleteAccountData?.(
-              accountId,
-              authGeneration
-            );
-            if (!cleanup?.success) {
-              throw new Error(cleanup?.error ?? "Could not remove local account data");
-            }
-          },
-          clearWorkspaceSessionState: () => syncService.purgeTeamSpacesForSignOut(),
-          signOut,
-          eraseDeviceData: async () => {
-            const cleanup = await window.electronAPI?.cleanupApp();
-            if (!cleanup?.success) {
-              throw new Error(cleanup?.errors?.join(", ") || "Could not erase device data");
-            }
-          },
-        },
-      });
-
-      showAlertDialog({
-        title: t("settingsPage.account.deleteAccount.successTitle"),
-        description:
-          result.localCleanupFailures.length > 0
-            ? t("settingsPage.account.deleteAccount.partialCleanupDescription")
-            : t("settingsPage.account.deleteAccount.successDescription"),
-      });
-      setTimeout(() => window.location.reload(), 1000);
-    } catch (error) {
-      logger.error("Account deletion failed", error, "auth");
-      showAlertDialog({
-        title: t("settingsPage.account.deleteAccount.failedTitle"),
-        description: t("settingsPage.account.deleteAccount.failedDescription"),
-      });
-    } finally {
-      setIsDeletingAccount(false);
-    }
-  }, [eraseDeviceData, showAlertDialog, t, user?.id]);
 
   const renderWhisperVadSettings = () => (
     <div>
@@ -2047,28 +1979,6 @@ export default function SettingsPage({
                         ? t("settingsPage.account.signOut.signingOut")
                         : t("settingsPage.account.signOut.signOut")}
                     </Button>
-                  </SettingsPanelRow>
-                </SettingsPanel>
-
-                <SettingsPanel>
-                  <SettingsPanelRow>
-                    <SettingsRow
-                      label={t("settingsPage.account.deleteAccount.label")}
-                      description={t("settingsPage.account.deleteAccount.labelDescription")}
-                    >
-                      <Button
-                        onClick={handleDeleteAccount}
-                        variant="outline"
-                        disabled={isDeletingAccount}
-                        size="sm"
-                        className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive"
-                      >
-                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                        {isDeletingAccount
-                          ? t("settingsPage.account.deleteAccount.deleting")
-                          : t("settingsPage.account.deleteAccount.button")}
-                      </Button>
-                    </SettingsRow>
                   </SettingsPanelRow>
                 </SettingsPanel>
               </>
@@ -2912,6 +2822,58 @@ export default function SettingsPage({
                             `}
                           >
                             <Icon className={`w-3 h-3 ${isSelected ? "text-primary" : ""}`} />
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </SettingsRow>
+                </SettingsPanelRow>
+                <SettingsPanelRow>
+                  <SettingsRow
+                    label={t("settingsPage.general.appearance.colorPalette")}
+                    description={t("settingsPage.general.appearance.colorPaletteDescription")}
+                  >
+                    <div className="inline-flex items-center gap-px p-0.5 bg-muted/60 dark:bg-surface-2 rounded-md">
+                      {(
+                        [
+                          {
+                            value: "default",
+                            swatch: "#2563eb",
+                            label: t("settingsPage.general.appearance.paletteDefault"),
+                          },
+                          {
+                            value: "pumpkin-spice",
+                            swatch: "#d9711a",
+                            label: t("settingsPage.general.appearance.palettePumpkinSpice"),
+                          },
+                          {
+                            value: "synthwave",
+                            swatch: "#ff4fa3",
+                            label: t("settingsPage.general.appearance.paletteSynthwave"),
+                          },
+                        ] as const
+                      ).map((option) => {
+                        const isSelected = colorPalette === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            onClick={() => setColorPalette(option.value)}
+                            className={`
+                              flex items-center gap-1.5 px-2.5 py-1 rounded-[5px] text-xs font-medium
+                              transition-colors duration-100
+                              ${
+                                isSelected
+                                  ? "bg-background dark:bg-surface-raised text-foreground shadow-sm"
+                                  : "text-muted-foreground hover:text-foreground"
+                              }
+                            `}
+                          >
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/10"
+                              style={{ backgroundColor: option.swatch }}
+                              aria-hidden="true"
+                            />
                             {option.label}
                           </button>
                         );
@@ -4588,42 +4550,6 @@ EOF`,
         confirmText={confirmDialog.confirmText}
         cancelText={confirmDialog.cancelText}
       />
-
-      <ConfirmDialog
-        open={isDeleteAccountDialogOpen}
-        onOpenChange={(open) => {
-          setIsDeleteAccountDialogOpen(open);
-          if (!open) setEraseDeviceData(false);
-        }}
-        title={t("settingsPage.account.deleteAccount.title")}
-        description={t("settingsPage.account.deleteAccount.description")}
-        onConfirm={() => void confirmDeleteAccount()}
-        variant="destructive"
-        confirmText={t("settingsPage.account.deleteAccount.confirmText")}
-        confirmDisabled={isDeletingAccount}
-      >
-        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-3">
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4 rounded border-border accent-destructive"
-            checked={eraseDeviceData}
-            onChange={(event) => setEraseDeviceData(event.target.checked)}
-          />
-          <span className="space-y-1">
-            <span className="block text-sm font-medium">
-              {t("settingsPage.account.deleteAccount.eraseDeviceLabel")}
-            </span>
-            <span className="block text-xs text-muted-foreground">
-              {t("settingsPage.account.deleteAccount.eraseDeviceDescription")}
-            </span>
-            {eraseDeviceData && (
-              <span className="block text-xs font-medium text-destructive">
-                {t("settingsPage.account.deleteAccount.eraseDeviceWarning")}
-              </span>
-            )}
-          </span>
-        </label>
-      </ConfirmDialog>
 
       <AlertDialog
         open={alertDialog.open}

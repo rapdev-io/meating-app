@@ -12,6 +12,7 @@ const {
 } = require("../utils/serverUtils");
 const sidecarPidFile = require("./sidecarPidFile");
 const { waitForExit } = require("./sidecarReaper");
+const { CACHE_DIR_NAME, LEGACY_CACHE_DIR_NAME, migrateCacheDirRename } = require("./modelDirUtils");
 
 const PORT_RANGE_START = 6333;
 const PORT_RANGE_END = 6350;
@@ -29,10 +30,17 @@ const MAX_RESTARTS_PER_SESSION = 3;
 // verifies the old process is really gone before spawning its replacement.
 const RESTART_EXIT_WAIT_MS = 2000;
 
+// App rebrand (OpenWhispr -> Protein): migrate the whole home-cache folder
+// in place (qdrant-data included) before reading from its new name.
+migrateCacheDirRename(
+  path.join(os.homedir(), ".cache", LEGACY_CACHE_DIR_NAME),
+  path.join(os.homedir(), ".cache", CACHE_DIR_NAME)
+);
+
 const STORAGE_DIR = path.join(
   os.homedir(),
   ".cache",
-  "openwhispr",
+  CACHE_DIR_NAME,
   process.env.NODE_ENV === "development" ? "qdrant-data-dev" : "qdrant-data"
 );
 

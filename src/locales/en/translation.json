@@ -641,6 +641,12 @@
       },
       "copyText": "Copy text",
       "copyRawTranscript": "Copy raw transcript",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportSuccessTitle": "Exported to Google Drive",
+      "exportNotConnectedTitle": "Google Drive not connected",
+      "exportNotConnectedDescription": "Connect Google Drive from Integrations first.",
+      "exportFailedTitle": "Export failed",
+      "exportFailedDescription": "Something went wrong exporting to Google Drive. Please try again.",
       "deleteItem": "Delete",
       "viewRawTranscript": "View raw transcript",
       "showInFolder": "Reveal in Finder",
@@ -825,6 +831,9 @@
     },
     "corti": {
       "euOnly": "Corti's models are only available in the EU region."
+    },
+    "rapdevProvided": {
+      "description": "Provided by RapDev — no API key needed."
     }
   },
   "transcription": {
@@ -1944,23 +1953,6 @@
       },
       "user": "User",
       "wordsRemaining": "{{remaining}} remaining",
-      "deleteAccount": {
-        "label": "Delete Account",
-        "labelDescription": "Permanently delete your account and personal cloud data. Other local users and workspace-owned content are preserved.",
-        "button": "Delete My Account",
-        "deleting": "Deleting...",
-        "title": "Delete Your Account?",
-        "description": "This permanently deletes your OpenWhispr account and personal data. Workspace-owned content and data belonging to other local users stay on this device.",
-        "confirmText": "Delete Account",
-        "eraseDeviceLabel": "Also erase all data from this device",
-        "eraseDeviceDescription": "Deletes every local user's notes and workspace cache, downloaded models, settings, calendar connections, credentials, and recordings.",
-        "eraseDeviceWarning": "This device-wide erasure cannot be undone and affects every local user.",
-        "successTitle": "Account Deleted",
-        "successDescription": "Your account and personal data were deleted. Other local users, workspaces, models, and device settings were preserved.",
-        "partialCleanupDescription": "Your account was deleted, but some local cleanup could not finish. Other users and workspace-owned content were preserved.",
-        "failedTitle": "Deletion Failed",
-        "failedDescription": "Account deletion could not complete. No device-wide erasure was started. Please try again."
-      },
       "profile": {
         "name": {
           "label": "Display name",
@@ -2132,9 +2124,14 @@
     "general": {
       "appearance": {
         "auto": "Auto",
+        "colorPalette": "Color Palette",
+        "colorPaletteDescription": "Pick an accent color family for the light/dark theme",
         "dark": "Dark",
         "description": "Control how Protein looks",
         "light": "Light",
+        "paletteDefault": "Default",
+        "palettePumpkinSpice": "Pumpkin Spice",
+        "paletteSynthwave": "Synthwave",
         "theme": "Theme",
         "themeDescription": "Choose light, dark, or match your system",
         "title": "Appearance"
@@ -2818,6 +2815,7 @@
     "older": "Older",
     "archive": "Archive",
     "unarchive": "Unarchive",
+    "exportToGoogleDrive": "Export to Google Drive",
     "delete": "Delete",
     "deleteConfirm": "This conversation will be permanently deleted. This cannot be undone.",
     "editTitle": "Double-click to edit title",
@@ -3068,6 +3066,9 @@
       "export": "Export",
       "asMarkdown": "As Markdown",
       "asPlainText": "As Plain Text",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportMeetingToGoogleDrive": "Sync meeting to Google Drive",
+      "exportedToGoogleDrive": "Exported to Google Drive",
       "asTranscriptText": "As Plain Text (.txt)",
       "asSubtitles": "As Subtitles (.srt)",
       "asJson": "As JSON (.json)",
@@ -3608,6 +3609,25 @@
   "integrations": {
     "title": "Integrations",
     "description": "Connect services to supercharge your workflow",
+    "googleDrive": {
+      "title": "Google Drive",
+      "description": "Export transcripts to a dedicated folder in your Google Drive.",
+      "connectedDescription": "Connected as {{email}} — exports go to \"{{folder}}\".",
+      "connect": "Connect Google Drive",
+      "connected": "Connected",
+      "disconnected": "Google Drive disconnected",
+      "disconnectTitle": "Disconnect Google Drive?",
+      "disconnectDescription": "You can reconnect at any time. Files already exported to Drive are not affected.",
+      "connectFailedTitle": "Couldn't connect Google Drive",
+      "hint": "Only files this app creates are ever visible to it — nothing else in your Drive is accessed.",
+      "errors": {
+        "notConfigured": "Google Drive export is not configured yet.",
+        "generic": "Something went wrong. Please try again.",
+        "timedOut": "Connection timed out waiting for the browser. Please try again.",
+        "browserLaunchFailed": "Could not open your browser to complete sign-in.",
+        "noRefreshToken": "Google didn't grant offline access. Remove Protein from your Google Account's connected apps and try again."
+      }
+    },
     "googleCalendar": {
       "title": "Google Calendar",
       "optional": "Optional",

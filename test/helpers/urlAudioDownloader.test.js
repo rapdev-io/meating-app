@@ -9,9 +9,9 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 // Isolate the yt-dlp self-update cache in a temp dir so tests never touch the
-// real ~/.cache/openwhispr. Must be set before the module is required.
+// real ~/.cache/protein. Must be set before the module is required.
 const YT_DLP_TEST_CACHE_DIR = path.join(os.tmpdir(), `ow-ytdlp-test-${process.pid}`);
-process.env.OPENWHISPR_YTDLP_CACHE_DIR = YT_DLP_TEST_CACHE_DIR;
+process.env.PROTEIN_YTDLP_CACHE_DIR = YT_DLP_TEST_CACHE_DIR;
 const downloader = require("../../src/helpers/urlAudioDownloader");
 const {
   detectUrlType,

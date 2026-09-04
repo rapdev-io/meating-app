@@ -25,6 +25,9 @@ export const PROVIDER_ICONS: Record<string, string> = {
   openai: openaiIcon,
   whisper: openaiIcon,
   anthropic: anthropicIcon,
+  // RapDev Provided runs on the same Claude models as the BYOK Anthropic
+  // provider, just with a different key source — reuse its mark.
+  rapdevProvided: anthropicIcon,
   gemini: geminiIcon,
   llama: llamaIcon,
   mistral: mistralIcon,
@@ -52,6 +55,7 @@ export const MONOCHROME_PROVIDERS = [
   "openai",
   "whisper",
   "anthropic",
+  "rapdevProvided",
   "openai-oss",
   "liquidai",
   "xai",

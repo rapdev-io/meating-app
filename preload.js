@@ -619,6 +619,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   processAnthropicReasoning: (text, modelId, agentName, config) =>
     ipcRenderer.invoke("process-anthropic-reasoning", text, modelId, agentName, config),
 
+  // RapDev Provided: same Anthropic API, keyed with an env-provided key that
+  // never reaches the renderer (see process-rapdev-reasoning in ipcHandlers.js).
+  processRapdevReasoning: (text, modelId, agentName, config) =>
+    ipcRenderer.invoke("process-rapdev-reasoning", text, modelId, agentName, config),
+
   // Enterprise reasoning (Bedrock, Azure, Vertex) — runs in main process so
   // Node-only SDKs (AWS/Azure/Google credential providers) can resolve.
   processEnterpriseReasoning: (text, modelId, agentName, config) =>
@@ -718,6 +723,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
   identityGetSession: () => ipcRenderer.invoke("identity-get-session"),
   identityRefreshSession: () => ipcRenderer.invoke("identity-refresh-session"),
   identityIsConfigured: () => ipcRenderer.invoke("identity-is-configured"),
+
+  // Google Drive export (separate authorization from company SSO; drive.file
+  // scope only — the app can only see files it created itself).
+  googleDriveConnect: () => ipcRenderer.invoke("google-drive-connect"),
+  googleDriveDisconnect: () => ipcRenderer.invoke("google-drive-disconnect"),
+  googleDriveGetStatus: () => ipcRenderer.invoke("google-drive-get-status"),
+  googleDriveExportTranscript: (transcriptionId) =>
+    ipcRenderer.invoke("google-drive-export-transcript", transcriptionId),
+  googleDriveExportNote: (noteId) => ipcRenderer.invoke("google-drive-export-note", noteId),
+  googleDriveExportChat: (conversationId) =>
+    ipcRenderer.invoke("google-drive-export-chat", conversationId),
   onIdentitySessionChanged: registerListener(
     "identity-session-changed",
     (callback) => (_event, payload) => callback(payload)

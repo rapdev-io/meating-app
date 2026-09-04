@@ -48,6 +48,7 @@ import type {
   PrivacySettings,
   ThemeSettings,
   ChatAgentSettings,
+  ColorPalette,
 } from "../hooks/useSettings";
 import type { Snippet } from "../utils/snippets";
 import type { EnterpriseSetupMode } from "../types/enterpriseIdentity";
@@ -69,6 +70,7 @@ export const LLM_POLICY_PROVIDER_IDS = [
   ...modelRegistryData.cloudProviders.map((provider) => provider.id),
   "openrouter",
   "custom",
+  "rapdevProvided",
 ] as const;
 
 // Azure and Vertex remain intentionally unavailable in the desktop picker.
@@ -930,6 +932,7 @@ export interface SettingsState
   setMicWarmHoldSeconds: (seconds: number) => void;
 
   setTheme: (value: "light" | "dark" | "auto") => void;
+  setColorPalette: (value: ColorPalette) => void;
   setCloudBackupEnabled: (value: boolean) => void;
   setTelemetryEnabled: (value: boolean) => void;
   setAudioRetentionDays: (days: number) => void;
@@ -1266,8 +1269,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   autoGenerateNoteTitle: readBoolean("autoGenerateNoteTitle", true),
   useCleanupModel: readBoolean("useCleanupModel", true),
   useDictationAgent: readBoolean("useDictationAgent", true),
-  cleanupModel: readString("cleanupModel", ""),
-  cleanupProvider: readString("cleanupProvider", "openai"),
+  cleanupModel: readString("cleanupModel", "claude-haiku-4-5"),
+  cleanupProvider: readString("cleanupProvider", "rapdevProvided"),
 
   // Secrets hydrate from main process in initializeSettings, never from localStorage.
   openaiApiKey: "",
@@ -1334,6 +1337,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     const v = readString("theme", "auto");
     if (v === "light" || v === "dark" || v === "auto") return v;
     return "auto" as const;
+  })(),
+  colorPalette: (() => {
+    const v = readString("colorPalette", "default");
+    if (v === "pumpkin-spice" || v === "synthwave") return v;
+    return "default" as const;
   })(),
   cloudBackupEnabled: readBoolean("cloudBackupEnabled", false),
   telemetryEnabled: readBoolean("telemetryEnabled", false),
@@ -1428,7 +1436,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   remoteTranscriptionUrl: readString("remoteTranscriptionUrl", ""),
   remoteTranscriptionModel: readString("remoteTranscriptionModel", ""),
   cleanupMode: (() => {
-    const v = readString("cleanupMode", "openwhispr");
+    const v = readString("cleanupMode", "providers");
     if (
       v === "openwhispr" ||
       v === "providers" ||
@@ -1437,7 +1445,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       v === "enterprise"
     )
       return v;
-    return "openwhispr" as InferenceMode;
+    return "providers" as InferenceMode;
   })(),
   cleanupRemoteUrl: readString("cleanupRemoteUrl", ""),
 
@@ -1477,7 +1485,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   uploadCloudTranscriptionMode: readString("uploadCloudTranscriptionMode", ""),
 
   noteFormattingMode: (() => {
-    const v = readString("noteFormattingMode", "openwhispr");
+    const v = readString("noteFormattingMode", "providers");
     if (
       v === "openwhispr" ||
       v === "providers" ||
@@ -1486,7 +1494,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       v === "enterprise"
     )
       return v;
-    return "openwhispr" as InferenceMode;
+    return "providers" as InferenceMode;
   })(),
   noteFormattingProvider: readString("noteFormattingProvider", ""),
   noteFormattingModel: readString("noteFormattingModel", ""),
@@ -1496,7 +1504,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   noteFormattingCustomApiKey: readString("noteFormattingCustomApiKey", ""),
 
   translationMode: (() => {
-    const v = readString("translationMode", "openwhispr");
+    const v = readString("translationMode", "providers");
     if (
       v === "openwhispr" ||
       v === "providers" ||
@@ -1505,10 +1513,10 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       v === "enterprise"
     )
       return v;
-    return "openwhispr" as InferenceMode;
+    return "providers" as InferenceMode;
   })(),
-  translationProvider: readString("translationProvider", ""),
-  translationModel: readString("translationModel", ""),
+  translationProvider: readString("translationProvider", "rapdevProvided"),
+  translationModel: readString("translationModel", "claude-haiku-4-5"),
   translationCloudMode: readString("translationCloudMode", "openwhispr"),
   translationCloudBaseUrl: readString("translationCloudBaseUrl", ""),
   translationRemoteUrl: readString("translationRemoteUrl", ""),
@@ -1605,11 +1613,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     set({ translationTargets: normalized });
   },
 
-  chatAgentModel: readString("chatAgentModel", "openai/gpt-oss-120b"),
-  chatAgentProvider: readString("chatAgentProvider", "groq"),
+  chatAgentModel: readString("chatAgentModel", "claude-haiku-4-5"),
+  chatAgentProvider: readString("chatAgentProvider", "rapdevProvided"),
   chatAgentCloudMode: readString("chatAgentCloudMode", "openwhispr"),
   chatAgentMode: (() => {
-    const v = readString("chatAgentMode", "openwhispr");
+    const v = readString("chatAgentMode", "providers");
     if (
       v === "openwhispr" ||
       v === "providers" ||
@@ -1618,14 +1626,14 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       v === "enterprise"
     )
       return v;
-    return "openwhispr" as InferenceMode;
+    return "providers" as InferenceMode;
   })(),
   chatAgentRemoteUrl: readString("chatAgentRemoteUrl", ""),
   chatAgentCloudBaseUrl: readString("chatAgentCloudBaseUrl", ""),
   chatAgentCustomApiKey: readString("chatAgentCustomApiKey", ""),
 
   dictationAgentMode: (() => {
-    const v = readString("dictationAgentMode", "openwhispr");
+    const v = readString("dictationAgentMode", "providers");
     if (
       v === "openwhispr" ||
       v === "providers" ||
@@ -1634,10 +1642,10 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       v === "enterprise"
     )
       return v;
-    return "openwhispr" as InferenceMode;
+    return "providers" as InferenceMode;
   })(),
-  dictationAgentProvider: readString("dictationAgentProvider", ""),
-  dictationAgentModel: readString("dictationAgentModel", ""),
+  dictationAgentProvider: readString("dictationAgentProvider", "rapdevProvided"),
+  dictationAgentModel: readString("dictationAgentModel", "claude-haiku-4-5"),
   dictationAgentCloudMode: readString("dictationAgentCloudMode", "openwhispr"),
   dictationAgentCloudBaseUrl: readString("dictationAgentCloudBaseUrl", ""),
   dictationAgentRemoteUrl: readString("dictationAgentRemoteUrl", ""),
@@ -1646,9 +1654,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   voiceAgentScreenContext: readBoolean("voiceAgentScreenContext", false),
   useDictationAgentVisionModel: readBoolean("useDictationAgentVisionModel", false),
   dictationAgentVisionMode: (() => {
-    const v = readString("dictationAgentVisionMode", "openwhispr");
+    const v = readString("dictationAgentVisionMode", "providers");
     if (v === "openwhispr" || v === "providers") return v as InferenceMode;
-    return "openwhispr" as InferenceMode;
+    return "providers" as InferenceMode;
   })(),
   dictationAgentVisionProvider: readString("dictationAgentVisionProvider", ""),
   dictationAgentVisionModel: readString("dictationAgentVisionModel", ""),
@@ -2083,6 +2091,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setTheme: (value: "light" | "dark" | "auto") => {
     if (isBrowser) localStorage.setItem("theme", value);
     set({ theme: value });
+  },
+
+  setColorPalette: (value: ColorPalette) => {
+    if (isBrowser) localStorage.setItem("colorPalette", value);
+    set({ colorPalette: value });
   },
 
   setCloudBackupEnabled: createBooleanSetter("cloudBackupEnabled"),

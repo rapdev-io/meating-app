@@ -63,6 +63,10 @@ jobs:
   build-linux:
     needs: tests
     runs-on: ubuntu-latest
+    # The RAPDEV_ANTHROPIC_API_KEY / OIDC_* secrets live under the "Default"
+    # GitHub Environment, not as repo secrets - a job only sees environment
+    # secrets when it declares this.
+    environment: Default
     steps:
       - uses: actions/checkout@v4
 
@@ -133,6 +137,8 @@ jobs:
           echo "OIDC_ISSUER_URL=${{ secrets.OIDC_ISSUER_URL }}" >> .env
           echo "OIDC_CLIENT_ID=${{ secrets.OIDC_CLIENT_ID }}" >> .env
           echo "OIDC_CLIENT_SECRET=${{ secrets.OIDC_CLIENT_SECRET }}" >> .env
+          echo "OIDC_ALLOWED_DOMAIN=${{ secrets.OIDC_ALLOWED_DOMAIN }}" >> .env
+          echo "OIDC_SCOPES=${{ secrets.OIDC_SCOPES }}" >> .env
 
       - name: Verify PipeWire system audio helper build
         run: |
@@ -151,6 +157,10 @@ jobs:
   build-windows:
     needs: tests
     runs-on: windows-latest
+    # The RAPDEV_ANTHROPIC_API_KEY / OIDC_* secrets live under the "Default"
+    # GitHub Environment, not as repo secrets - a job only sees environment
+    # secrets when it declares this.
+    environment: Default
     steps:
       - uses: actions/checkout@v4
 
@@ -252,6 +262,8 @@ jobs:
           echo "OIDC_ISSUER_URL=${{ secrets.OIDC_ISSUER_URL }}" >> .env
           echo "OIDC_CLIENT_ID=${{ secrets.OIDC_CLIENT_ID }}" >> .env
           echo "OIDC_CLIENT_SECRET=${{ secrets.OIDC_CLIENT_SECRET }}" >> .env
+          echo "OIDC_ALLOWED_DOMAIN=${{ secrets.OIDC_ALLOWED_DOMAIN }}" >> .env
+          echo "OIDC_SCOPES=${{ secrets.OIDC_SCOPES }}" >> .env
 
       - name: Build Application (unsigned)
         run: npm run build:win -- --publish always --config electron-builder.unsigned-win.json
@@ -264,6 +276,10 @@ jobs:
   build-macos:
     needs: tests
     runs-on: macos-latest
+    # The RAPDEV_ANTHROPIC_API_KEY / OIDC_* secrets live under the "Default"
+    # GitHub Environment, not as repo secrets - a job only sees environment
+    # secrets when it declares this.
+    environment: Default
     strategy:
       fail-fast: false
       matrix:
@@ -348,6 +364,8 @@ jobs:
           echo "OIDC_ISSUER_URL=${{ secrets.OIDC_ISSUER_URL }}" >> .env
           echo "OIDC_CLIENT_ID=${{ secrets.OIDC_CLIENT_ID }}" >> .env
           echo "OIDC_CLIENT_SECRET=${{ secrets.OIDC_CLIENT_SECRET }}" >> .env
+          echo "OIDC_ALLOWED_DOMAIN=${{ secrets.OIDC_ALLOWED_DOMAIN }}" >> .env
+          echo "OIDC_SCOPES=${{ secrets.OIDC_SCOPES }}" >> .env
 
       - name: Build Application (${{ matrix.arch }}, unsigned)
         run: npm run build:mac -- --${{ matrix.arch }} --publish always

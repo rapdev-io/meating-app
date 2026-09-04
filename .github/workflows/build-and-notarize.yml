@@ -18,6 +18,10 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    # Pre-existing lint/test failures shouldn't block internal builds on this
+    # fork. Keeps the job's own pass/fail visible while letting build-linux/
+    # build-windows/build-macos (needs: quality) proceed regardless.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

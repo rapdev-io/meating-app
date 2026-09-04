@@ -1,3 +1,4 @@
+import APP_CONFIG from "../../config/appIdentity.json";
 import {
   filterByokProviderOptionsByPolicy,
   isModeAllowedByPolicy,
@@ -39,7 +40,12 @@ export function getOnboardingSetupAvailability({
     isModeAllowedByPolicy(policy, "llm", "providers") &&
     filterByokProviderOptionsByPolicy(llmProviders, "llm", policy).length > 0;
 
+  // isModeAllowedByPolicy alone allows "openwhispr" for any unmanaged policy
+  // state (the common case) — it only encodes workspace policy, not whether
+  // OpenWhispr Cloud is initialized at all. Internal (Protein/RapDev) build:
+  // it never is, so the cloud card must never surface here regardless of policy.
   const cloud =
+    APP_CONFIG.enableOpenWhisprCloud &&
     isModeAllowedByPolicy(policy, "transcription", "openwhispr") &&
     (!agentAllowed || isModeAllowedByPolicy(policy, "llm", "openwhispr"));
   const local =

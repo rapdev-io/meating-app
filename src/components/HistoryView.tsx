@@ -30,6 +30,7 @@ interface HistoryViewProps {
   onRetryTranscription: (id: number, options?: { isRecover?: boolean }) => Promise<void>;
   showDiscarded: boolean;
   onToggleDiscarded: () => void;
+  onExportToGoogleDrive?: (id: number) => Promise<void>;
 }
 
 export default function HistoryView({
@@ -50,6 +51,7 @@ export default function HistoryView({
   onRetryTranscription,
   showDiscarded,
   onToggleDiscarded,
+  onExportToGoogleDrive,
 }: HistoryViewProps) {
   const { t } = useTranslation();
   const personalDataRetentionEnabled = useSettingsStore((s) => s.dataRetentionEnabled);
@@ -330,6 +332,7 @@ export default function HistoryView({
                           onShowAudioInFolder={onShowAudioInFolder}
                           onRetryTranscription={onRetryTranscription}
                           onOpenSettings={() => onOpenSettings("transcription")}
+                          onExportToGoogleDrive={onExportToGoogleDrive}
                         />
                       ))}
                     </div>

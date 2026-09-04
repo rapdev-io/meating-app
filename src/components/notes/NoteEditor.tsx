@@ -15,7 +15,10 @@ import {
   Check,
   Share2,
   Users,
+  UploadCloud,
 } from "lucide-react";
+import APP_CONFIG from "../../config/appIdentity.json";
+import { useToast } from "../ui/useToast";
 import ShareNoteDialog from "./ShareNoteDialog";
 import {
   canOrganizeNote,
@@ -227,6 +230,38 @@ export default function NoteEditor({
   onCancelPendingSaves,
 }: NoteEditorProps) {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const [isExportingToGoogleDrive, setIsExportingToGoogleDrive] = useState(false);
+  const handleExportToGoogleDrive = useCallback(async () => {
+    if (isExportingToGoogleDrive) return;
+    setIsExportingToGoogleDrive(true);
+    try {
+      const result = await window.electronAPI?.googleDriveExportNote?.(note.id);
+      if (result?.success) {
+        toast({ title: t("notes.editor.exportedToGoogleDrive"), description: result.name });
+      } else if (result?.code === "NOT_CONNECTED" || result?.code === "NOT_CONFIGURED") {
+        toast({
+          title: t("controlPanel.history.exportNotConnectedTitle"),
+          description: t("controlPanel.history.exportNotConnectedDescription"),
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: t("controlPanel.history.exportFailedTitle"),
+          description: result?.error || t("controlPanel.history.exportFailedDescription"),
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: t("controlPanel.history.exportFailedTitle"),
+        description: t("controlPanel.history.exportFailedDescription"),
+        variant: "destructive",
+      });
+    } finally {
+      setIsExportingToGoogleDrive(false);
+    }
+  }, [isExportingToGoogleDrive, note.id, t, toast]);
   const [viewMode, setViewMode] = useState<MeetingViewMode>("raw");
   const [chatMode, setChatMode] = useState<EmbeddedChatMode>("hidden");
   const [folderSearch, setFolderSearch] = useState("");
@@ -1133,6 +1168,22 @@ export default function NoteEditor({
                           {t("notes.editor.asPlainText")}
                         </DropdownMenuItem>
                       </>
+                    )}
+                    {APP_CONFIG.internalBuild && (
+                      <DropdownMenuItem
+                        onClick={handleExportToGoogleDrive}
+                        disabled={isExportingToGoogleDrive}
+                        className="text-xs gap-2"
+                      >
+                        {isExportingToGoogleDrive ? (
+                          <Loader2 size={13} className="text-foreground/40 animate-spin" />
+                        ) : (
+                          <UploadCloud size={13} className="text-foreground/40" />
+                        )}
+                        {hasMeetingTranscript
+                          ? t("notes.editor.exportMeetingToGoogleDrive")
+                          : t("notes.editor.exportToGoogleDrive")}
+                      </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>

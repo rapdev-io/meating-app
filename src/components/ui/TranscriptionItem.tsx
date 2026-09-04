@@ -11,6 +11,7 @@ import {
   Loader2,
   AlertCircle,
   ArchiveRestore,
+  UploadCloud,
 } from "lucide-react";
 import type {
   TranscriptionItem as TranscriptionItemType,
@@ -35,6 +36,7 @@ interface TranscriptionItemProps {
   onShowAudioInFolder?: (id: number) => void;
   onRetryTranscription?: (id: number, options?: { isRecover?: boolean }) => Promise<void>;
   onOpenSettings?: () => void;
+  onExportToGoogleDrive?: (id: number) => Promise<void>;
 }
 
 export default function TranscriptionItem({
@@ -44,11 +46,13 @@ export default function TranscriptionItem({
   onShowAudioInFolder,
   onRetryTranscription,
   onOpenSettings,
+  onExportToGoogleDrive,
 }: TranscriptionItemProps) {
   const { t, i18n } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const timestampSource = item.timestamp.endsWith("Z") ? item.timestamp : `${item.timestamp}Z`;
   const timestampDate = new Date(timestampSource);
@@ -66,6 +70,16 @@ export default function TranscriptionItem({
       await onRetryTranscription(item.id, { isRecover: item.status === "discarded" });
     } finally {
       setIsRetrying(false);
+    }
+  };
+
+  const handleExportToGoogleDrive = async () => {
+    if (isExporting || !onExportToGoogleDrive) return;
+    setIsExporting(true);
+    try {
+      await onExportToGoogleDrive(item.id);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -273,6 +287,23 @@ export default function TranscriptionItem({
             </Tooltip>
           )}
           {showUtilityGroup && <div className="w-px h-3 bg-border/30" />}
+          {!isFailed && !isDiscarded && onExportToGoogleDrive && (
+            <Tooltip content={t("controlPanel.history.exportToGoogleDrive")}>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleExportToGoogleDrive}
+                disabled={isExporting}
+                className="h-6 w-6 rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10"
+              >
+                {isExporting ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <UploadCloud size={12} />
+                )}
+              </Button>
+            </Tooltip>
+          )}
           {!isFailed && !isDiscarded && (
             <Tooltip content={t("controlPanel.history.copyText")}>
               <Button

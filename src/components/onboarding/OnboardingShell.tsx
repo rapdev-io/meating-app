@@ -7,11 +7,13 @@ import { useTranslation } from "react-i18next";
 import { getPlatform } from "../../utils/platform";
 import { useWindowControls } from "../../hooks/useWindowControls";
 // Imported (not referenced by path) so Vite fingerprints it and it resolves
-// under the packaged app's file:// origin. See .onboarding-compact-hero.
-import heroDither from "@/assets/onboarding-hero-dither.webp";
-import heroDitherDark from "@/assets/onboarding-hero-dither-dark.webp";
+// under the packaged app's file:// origin. See .onboarding-compact-bg.
+import compactBackgroundLight from "@/assets/onboarding-compact-bg-light.svg";
+import compactBackgroundDark from "@/assets/onboarding-compact-bg-dark.svg";
 import onboardingBackgroundLight from "@/assets/onboarding-bg-light.svg";
 import onboardingBackgroundDark from "@/assets/onboarding-bg-dark.svg";
+import proteinMarkNavy from "@/assets/protein-mark-egg-navy.svg";
+import proteinMarkWhite from "@/assets/protein-mark-egg-white.svg";
 
 interface OnboardingShellProps {
   compact?: boolean;
@@ -335,19 +337,46 @@ export function CompactOnboardingFrame({
   return (
     <section className="relative flex h-full min-h-screen w-full flex-col overflow-hidden bg-[var(--onboarding-surface)] text-[var(--onboarding-text-primary)]">
       <div
-        className="onboarding-compact-hero pointer-events-none absolute inset-x-0 top-0 h-48"
-        // Both strips are handed over as custom properties and .onboarding-compact-hero
+        className="onboarding-compact-bg pointer-events-none absolute inset-0"
+        // Both images are handed over as custom properties and .onboarding-compact-bg
         // picks one per theme; the URLs have to come from here because only an import
         // gets fingerprinted by Vite and resolves under the packaged file:// origin.
+        // Authored at 480x624 — the compact window's own size (see COMPACT in
+        // windowConfig.js) — so it covers the frame at native resolution with no
+        // scaling artifacts.
         style={
           {
-            "--onboarding-hero-dither-light": `url(${heroDither})`,
-            "--onboarding-hero-dither-dark": `url(${heroDitherDark})`,
+            "--onboarding-compact-bg-light": `url(${compactBackgroundLight})`,
+            "--onboarding-compact-bg-dark": `url(${compactBackgroundDark})`,
           } as CSSProperties
         }
       />
       {showBrandMark && (
-        <BrandMark className="pointer-events-none absolute left-1/2 top-13 z-10 size-28 -translate-x-1/2 text-white" />
+        // Navy mark over the light background, white mark over the dark one —
+        // each is the inverse of .onboarding-compact-bg's own base color, so
+        // the mark stays legible against the artwork behind it either way.
+        <>
+          <img
+            src={proteinMarkNavy}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            decoding="async"
+            width={112}
+            height={112}
+            className="pointer-events-none absolute left-1/2 top-13 z-10 size-28 -translate-x-1/2 dark:hidden"
+          />
+          <img
+            src={proteinMarkWhite}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            decoding="async"
+            width={112}
+            height={112}
+            className="pointer-events-none absolute left-1/2 top-13 z-10 hidden size-28 -translate-x-1/2 dark:block"
+          />
+        </>
       )}
 
       {/* The compact BrowserWindow is the authored 480x624 surface. This layer

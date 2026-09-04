@@ -1,3 +1,4 @@
+import APP_CONFIG from "../../config/appIdentity.json";
 import { ToolRegistry } from "./ToolRegistry";
 import { createSearchNotesTool } from "./searchNotesTool";
 import { getNoteTool } from "./getNoteTool";
@@ -33,7 +34,10 @@ export function createToolRegistry(settings: ToolRegistrySettings): ToolRegistry
   registry.register(listFoldersTool);
   registry.register(clipboardTool);
 
-  if (settings.isSignedIn && settings.webSearchEnabled) {
+  // webSearchEnabled reflects workspace policy only (default-allow when
+  // unmanaged); agent-web-search itself proxies through OpenWhispr Cloud,
+  // which Protein never initializes, so it needs its own gate here too.
+  if (settings.isSignedIn && settings.webSearchEnabled && APP_CONFIG.enableOpenWhisprCloud) {
     registry.register(webSearchTool);
   }
 

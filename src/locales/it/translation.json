@@ -1065,7 +1065,6 @@
     "emailStep": {
       "checkingEmail": "Verifica dell'e-mail in corso...",
       "continueWithEmail": "Continua con l'e-mail",
-      "continueWithoutAccount": "Continua senza account",
       "emailLabel": "E-mail",
       "emailPlaceholder": "tu@esempio.com",
       "useDifferentEmail": "Usa un'altra e-mail"
@@ -1081,7 +1080,6 @@
       "invalidCredentials": "E-mail o password non valide",
       "plusAliasUnsupported": "Gli alias e-mail con '+' non sono supportati"
     },
-    "getStarted": "Inizia",
     "legal": {
       "and": "e",
       "prefix": "Continuando, accetti i nostri",
@@ -1129,7 +1127,7 @@
       "continueWithMicrosoft": "Continua con Microsoft",
       "protocolUnavailable": "Accesso dal browser non disponibile — registra di nuovo il protocollo openwhispr:// nelle impostazioni Applicazioni predefinite del sistema."
     },
-    "welcomeSubtitle": "Usa la tua voce per tutto",
+    "welcomeSubtitle": "Ecco uno slogan niente male",
     "welcomeTitle": "Benvenuto in OpenWhispr"
   },
   "cleanupPrompt": "Correzione",

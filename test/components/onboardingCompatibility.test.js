@@ -20,8 +20,10 @@ async function createOnboardingRenderer(t, platform = "linux") {
           return { t(key) { return key; } };
         }
       `,
-      "onboarding-hero-dither.webp": `export default "hero-light.webp";`,
-      "onboarding-hero-dither-dark.webp": `export default "hero-dark.webp";`,
+      "onboarding-compact-bg-light.svg": `export default "compact-background-light.svg";`,
+      "onboarding-compact-bg-dark.svg": `export default "compact-background-dark.svg";`,
+      "protein-mark-egg-navy.svg": `export default "protein-mark-egg-navy.svg";`,
+      "protein-mark-egg-white.svg": `export default "protein-mark-egg-white.svg";`,
       "onboarding-bg-light.svg": `export default "background-light.svg";`,
       "onboarding-bg-dark.svg": `export default "background-dark.svg";`,
       "onboarding-permission-microphone.webp": `export default "microphone.webp";`,

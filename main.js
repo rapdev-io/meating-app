@@ -317,6 +317,7 @@ const WindowsLoopbackAudioManager = require("./src/helpers/windowsLoopbackAudioM
 const MeetingAecManager = require("./src/helpers/meetingAecManager");
 const MeetingDetectionEngine = require("./src/helpers/meetingDetectionEngine");
 const OidcIdentityManager = require("./src/helpers/oidcIdentityManager");
+const GoogleDriveManager = require("./src/helpers/googleDriveManager");
 const { applyOpenWhisprOriginHeader } = require("./src/helpers/sessionHeaders");
 const { i18nMain, changeLanguage } = require("./src/helpers/i18nMain");
 const { ensureYdotool } = require("./src/helpers/ensureYdotool");
@@ -353,6 +354,7 @@ let windowsLoopbackAudioManager = null;
 let meetingAecManager = null;
 let qdrantManager = null;
 let oidcIdentityManager = null;
+let googleDriveManager = null;
 let ipcHandlers = null;
 let cliBridge = null;
 let globeKeyAlertShown = false;
@@ -527,6 +529,7 @@ function initializeCoreManagers() {
   updateManager = new UpdateManager();
   updateManager.setWindowManager(windowManager);
   oidcIdentityManager = new OidcIdentityManager();
+  googleDriveManager = new GoogleDriveManager();
   windowsKeyManager = new WindowsKeyManager();
   linuxKeyManager = new LinuxKeyManager();
   textEditMonitor = new TextEditMonitor();
@@ -570,6 +573,7 @@ function initializeCoreManagers() {
     windowsLoopbackAudioManager,
     meetingAecManager,
     oidcIdentityManager,
+    googleDriveManager,
     getQdrantManager: () => qdrantManager,
     getTrayManager: () => trayManager,
     oauthProtocolRegistered: protocolRegistered,

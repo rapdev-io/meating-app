@@ -18,6 +18,7 @@ import { getLlmRequestTimeoutSeconds } from "../helpers/llmRequestTimeout.js";
 import { streamText, stepCountIs } from "ai";
 import { getAIModel } from "./ai/providers";
 import { createEnterpriseChatModel } from "./ai/enterpriseChatModel";
+import { createAnthropicChatModel } from "./ai/anthropicChatModel";
 import { getManagedScopeResolution } from "../stores/enterpriseIdentityStore";
 import type { InferenceScope } from "../config/inferenceScopes";
 import { PROVIDER_REGISTRY, type ProviderContext } from "./ai/inferenceProviders";
@@ -797,9 +798,12 @@ class ReasoningService extends BaseReasoningService {
     let apiKey = "";
     let baseURL: string | undefined;
 
-    if (isEnterprise) {
-      // Enterprise SDKs run in the main process; the model below proxies
-      // doStream over IPC, so no key or base URL is resolved here.
+    const isAnthropic = provider === "anthropic";
+    if (isEnterprise || isAnthropic) {
+      // Enterprise SDKs and Anthropic BYOK both run in the main process; the
+      // model below proxies doStream over IPC, so no key or base URL is
+      // resolved here (Anthropic's API refuses browser-origin requests, and
+      // the pill window keeps Chromium's default webSecurity enabled).
     } else if (isLanChat) {
       apiKey = route.apiKey;
       baseURL = resolveSelfHostedOpenAIBase(route.baseUrl);
@@ -819,9 +823,11 @@ class ReasoningService extends BaseReasoningService {
     // Resolving a Tinfoil model refreshes the registry, so read model config after it.
     const aiModel = isEnterprise
       ? createEnterpriseChatModel(provider as EnterpriseProvider, model, config.inferenceScope)
-      : await getAIModel(aiProvider, model, apiKey, baseURL, {
-          disableThinking: openrouterDisableThinking,
-        });
+      : isAnthropic
+        ? createAnthropicChatModel(model)
+        : await getAIModel(aiProvider, model, apiKey, baseURL, {
+            disableThinking: openrouterDisableThinking,
+          });
 
     if (abortController.signal.aborted) {
       yield { type: "done", finishReason: "stop" };

@@ -19,8 +19,10 @@ test("returning-user authentication renders the complete compact onboarding surf
           return { t(key) { return key; } };
         }
       `,
-      "onboarding-hero-dither.webp": `export default "hero-light.webp";`,
-      "onboarding-hero-dither-dark.webp": `export default "hero-dark.webp";`,
+      "onboarding-compact-bg-light.svg": `export default "compact-background-light.svg";`,
+      "onboarding-compact-bg-dark.svg": `export default "compact-background-dark.svg";`,
+      "protein-mark-egg-navy.svg": `export default "protein-mark-egg-navy.svg";`,
+      "protein-mark-egg-white.svg": `export default "protein-mark-egg-white.svg";`,
       "onboarding-bg-light.svg": `export default "background-light.svg";`,
       "onboarding-bg-dark.svg": `export default "background-dark.svg";`,
       "/config/constants": `export const OPENWHISPR_API_URL = "";`,
@@ -51,14 +53,14 @@ test("returning-user authentication renders the complete compact onboarding surf
   const markup = renderToStaticMarkup(
     React.createElement(ReauthenticationScreen, {
       onAuthComplete: noop,
-      onContinueWithoutAccount: noop,
     })
   );
 
   assert.match(markup, /<main class="onboarding-canvas[^"]*compact/);
-  assert.match(markup, /onboarding-compact-hero/);
+  assert.match(markup, /onboarding-compact-bg/);
   assert.match(markup, /auth\.welcomeTitle/);
-  assert.match(markup, /auth\.emailStep\.continueWithoutAccount/);
+  // No account is optional: reauthentication offers no way to skip sign-in.
+  assert.doesNotMatch(markup, /auth\.emailStep\.continueWithoutAccount/);
   // This internal (Protein/RapDev) build has no hosted terms/privacy page —
   // CompactOnboardingFrame hides the legal footer by default rather than
   // linking to OpenWhispr's own under different branding.
@@ -85,12 +87,11 @@ test("forwards its props straight through to AuthenticationStep", async (t) => {
   );
   const props = {
     onAuthComplete: noop,
-    onContinueWithoutAccount: noop,
   };
 
   const authStep = CompactAuthenticationFlow(props);
   assert.equal(authStep.type.name, "AuthenticationStep");
   assert.equal(authStep.props.onAuthComplete, props.onAuthComplete);
-  assert.equal(authStep.props.onContinueWithoutAccount, props.onContinueWithoutAccount);
+  assert.equal(authStep.props.onContinueWithoutAccount, undefined);
   assert.equal(authStep.props.onNeedsVerification, undefined);
 });

@@ -1064,7 +1064,6 @@
     "emailStep": {
       "checkingEmail": "Checking your email...",
       "continueWithEmail": "Continue with email",
-      "continueWithoutAccount": "Continue without an account",
       "emailLabel": "Email",
       "emailPlaceholder": "you@example.com",
       "useDifferentEmail": "Use a different email"
@@ -1080,7 +1079,6 @@
       "invalidCredentials": "Invalid email or password",
       "plusAliasUnsupported": "Email aliases with '+' are not supported"
     },
-    "getStarted": "Get Started",
     "legal": {
       "and": "and",
       "prefix": "By continuing, you agree to our",
@@ -1128,7 +1126,7 @@
       "continueWithMicrosoft": "Continue with Microsoft",
       "protocolUnavailable": "Browser sign-in unavailable — re-register the protein:// protocol in your system's Default Apps settings."
     },
-    "welcomeSubtitle": "Use voice for everything",
+    "welcomeSubtitle": "Here's a good tagline",
     "welcomeTitle": "Welcome to Protein",
     "sessionExpired": "Session expired. Please restart the sign-up process."
   },

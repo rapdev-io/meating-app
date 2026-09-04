@@ -158,6 +158,178 @@
     0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
+/* ------------------------------------------------------------
+   Color palettes — an optional accent-color family layered over the
+   light/dark scheme above, chosen independently in Settings > Appearance.
+   Each palette is two blocks, one per scheme: `[data-palette="x"]` covers
+   light (same specificity as :root, so it must come after :root to win),
+   and `[data-palette="x"].dark` covers dark (higher specificity than plain
+   .dark, so it always wins there regardless of source order). Every color
+   token .dark also sets is restated in both blocks — nothing is left to
+   fall through to the default palette's colors. --color-accent and
+   --color-agent-brand (Agent Mode's identity color) are deliberately left
+   at their default-palette values in every block: they're a fixed brand
+   mark, not part of the reskin.
+   ------------------------------------------------------------ */
+
+/* Pumpkin Spice — dark roast espresso surfaces with cream ink and a pumpkin
+   accent, or a cream latte page with dark-chocolate ink and a cinnamon
+   accent. */
+[data-palette="pumpkin-spice"] {
+  --color-background: #fbf3e8;
+  --color-foreground: #2b1a10;
+  --color-card: #fffdf9;
+  --color-card-foreground: #2b1a10;
+  --color-popover: #fffdf9;
+  --color-popover-foreground: #2b1a10;
+  --color-primary: #b4530e;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f4e6d6;
+  --color-secondary-foreground: #2b1a10;
+  --color-muted: #f4e6d6;
+  --color-muted-foreground: #6b4e3a;
+  --color-accent: oklch(0.55 0.22 285);
+  --color-accent-foreground: #ffffff;
+  --color-agent-brand: #8787ff;
+  --color-destructive: #b3261e;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e6d5c2;
+  --color-input: #fffdf9;
+  --color-ring: #b4530e;
+  --color-link: #b4530e;
+  --color-success: #256b2a;
+  --color-success-foreground: #ffffff;
+  --color-warning: #9a5b00;
+  --color-warning-foreground: #ffffff;
+  --color-info: #1e5aa8;
+  --color-info-foreground: #ffffff;
+  --color-surface-0: #fbf3e8;
+  --color-surface-1: #f6ebdc;
+  --color-surface-2: #fffdf9;
+  --color-surface-3: #f4e6d6;
+  --color-surface-raised: #f1dfc9;
+  --color-border-subtle: #e6d5c2;
+  --color-border-hover: #c9ae92;
+  --color-border-active: #b4530e;
+}
+
+[data-palette="pumpkin-spice"].dark {
+  --color-background: #1f130d;
+  --color-foreground: #fff8f0;
+  --color-card: #2a1a12;
+  --color-card-foreground: #fff8f0;
+  --color-popover: #35221a;
+  --color-popover-foreground: #fff8f0;
+  --color-primary: #d9711a;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #35221a;
+  --color-secondary-foreground: #fff8f0;
+  --color-muted: #2a1a12;
+  --color-muted-foreground: #cdb39b;
+  --color-accent: oklch(0.68 0.18 285);
+  --color-accent-foreground: oklch(0.99 0 0);
+  --color-agent-brand: #8787ff;
+  --color-destructive: #e5484d;
+  --color-destructive-foreground: #fff8f0;
+  --color-border: #4a3123;
+  --color-input: #2a1a12;
+  --color-ring: #d9711a;
+  --color-link: #e38b4a;
+  --color-success: #5dd39e;
+  --color-success-foreground: #1f130d;
+  --color-warning: #f5b84a;
+  --color-warning-foreground: #1f130d;
+  --color-info: #7fb3e6;
+  --color-info-foreground: #1f130d;
+  --color-surface-0: #1f130d;
+  --color-surface-1: #251710;
+  --color-surface-2: #2a1a12;
+  --color-surface-3: #35221a;
+  --color-surface-raised: #3d281e;
+  --color-border-subtle: #4a3123;
+  --color-border-hover: #6e4c36;
+  --color-border-active: #d9711a;
+}
+
+/* Synthwave — the cool counterpart to Pumpkin Spice: midnight indigo
+   surfaces with lavender ink and a hot-pink accent, or a lavender-white
+   page with grape ink and a magenta accent. */
+[data-palette="synthwave"] {
+  --color-background: #f6f1ff;
+  --color-foreground: #1b0f33;
+  --color-card: #ffffff;
+  --color-card-foreground: #1b0f33;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1b0f33;
+  --color-primary: #c2187a;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #ece4fa;
+  --color-secondary-foreground: #1b0f33;
+  --color-muted: #ece4fa;
+  --color-muted-foreground: #57457e;
+  --color-accent: oklch(0.55 0.22 285);
+  --color-accent-foreground: #ffffff;
+  --color-agent-brand: #8787ff;
+  --color-destructive: #be123c;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #ded3f2;
+  --color-input: #ffffff;
+  --color-ring: #c2187a;
+  --color-link: #c2187a;
+  --color-success: #15803d;
+  --color-success-foreground: #ffffff;
+  --color-warning: #b45309;
+  --color-warning-foreground: #ffffff;
+  --color-info: #2563eb;
+  --color-info-foreground: #ffffff;
+  --color-surface-0: #f6f1ff;
+  --color-surface-1: #f0e9fc;
+  --color-surface-2: #ffffff;
+  --color-surface-3: #ece4fa;
+  --color-surface-raised: #e6dcf7;
+  --color-border-subtle: #ded3f2;
+  --color-border-hover: #b7a5dc;
+  --color-border-active: #c2187a;
+}
+
+[data-palette="synthwave"].dark {
+  --color-background: #140b26;
+  --color-foreground: #f8f4ff;
+  --color-card: #1c1038;
+  --color-card-foreground: #f8f4ff;
+  --color-popover: #261648;
+  --color-popover-foreground: #f8f4ff;
+  --color-primary: #ff4fa3;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #261648;
+  --color-secondary-foreground: #f8f4ff;
+  --color-muted: #1c1038;
+  --color-muted-foreground: #b8a6e0;
+  --color-accent: oklch(0.68 0.18 285);
+  --color-accent-foreground: oklch(0.99 0 0);
+  --color-agent-brand: #8787ff;
+  --color-destructive: #fb7185;
+  --color-destructive-foreground: #140b26;
+  --color-border: #34215e;
+  --color-input: #1c1038;
+  --color-ring: #ff4fa3;
+  --color-link: #ff8fc6;
+  --color-success: #4ade80;
+  --color-success-foreground: #140b26;
+  --color-warning: #fbbf24;
+  --color-warning-foreground: #140b26;
+  --color-info: #38bdf8;
+  --color-info-foreground: #140b26;
+  --color-surface-0: #140b26;
+  --color-surface-1: #180d2e;
+  --color-surface-2: #1c1038;
+  --color-surface-3: #261648;
+  --color-surface-raised: #2e1b57;
+  --color-border-subtle: #34215e;
+  --color-border-hover: #4c3389;
+  --color-border-active: #ff4fa3;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -704,30 +876,24 @@ body.dark:has(.onboarding-canvas) {
   background-image: none;
 }
 
-/* The indigo-to-white hero ramp is a baked Bayer 16x16 ordered dither (2px
-   cells, 5 steps along the ramp) rather than a CSS gradient plus a dot grid.
-   The ramp is purely vertical, so one Bayer period — 16 cells at 2px = 32px —
-   tiles horizontally with no seam, and the whole strip costs ~250 bytes.
-   background-size pins it to 1 image px per CSS px so the cells stay square;
-   image-rendering keeps them hard-edged on fractional device pixel ratios
-   instead of resampling the dither into mush. The background-image URL is set
-   inline from an imported asset (see CompactOnboardingFrame) so Vite
+/* Full-bleed RapDev background for the compact auth/reauth window. Authored at
+   480x624 — exactly the compact window's own size — so background-size is a
+   plain 100% 100% rather than cover/contain math. The background-image URL is
+   set inline from an imported asset (see CompactOnboardingFrame) so Vite
    fingerprints it and it resolves under the packaged file:// origin — which is
    also why the theme swap reads two inline custom properties instead of naming
-   the files here. The strips are 32px-wide Bayer-dither gradients, one per
-   theme, baked into src/assets/onboarding-hero-dither{,-dark}.webp. */
-.onboarding-compact-hero {
-  background-image: var(--onboarding-hero-dither-light);
-  background-repeat: repeat-x;
-  background-size: 32px 100%;
-  image-rendering: pixelated;
+   the files here. */
+.onboarding-compact-bg {
+  background-image: var(--onboarding-compact-bg-light);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 
-/* The dark strip resolves into --onboarding-surface rather than white, so it has
-   to be a separate asset — a filter or blend on the light one would take the
-   indigo with it. */
-.dark .onboarding-compact-hero {
-  background-image: var(--onboarding-hero-dither-dark);
+/* Separate asset rather than a filter/blend on the light one: the artwork's
+   diamond-tile linework and accent teal differ per theme, not just its base
+   navy-vs-white fill. */
+.dark .onboarding-compact-bg {
+  background-image: var(--onboarding-compact-bg-dark);
 }
 
 /* The classic typing indicator: each dot hops and brightens in turn, so with a

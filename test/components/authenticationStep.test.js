@@ -112,7 +112,7 @@ async function loadAuthenticationStep(t) {
   return AuthenticationStep;
 }
 
-test("not-configured state offers continuing without an account", async (t) => {
+test("not-configured state blocks access with no way to continue", async (t) => {
   installBrowserGlobals(t, { window: { electronAPI: {} } });
   t.after(() => {
     delete globalThis.__authenticationStepHarness;
@@ -120,26 +120,43 @@ test("not-configured state offers continuing without an account", async (t) => {
 
   const harness = createHarness({ authState: { isLoaded: true, isSignedIn: false, user: null } });
   harness.authUrl = "";
-  let continuedWithoutAccount = 0;
   globalThis.__authenticationStepHarness = harness;
   const AuthenticationStep = await loadAuthenticationStep(t);
 
   const render = () => {
     harness.cursor = 0;
-    return AuthenticationStep({
-      onAuthComplete() {},
-      onContinueWithoutAccount: () => {
-        continuedWithoutAccount += 1;
-      },
-    });
+    return AuthenticationStep({ onAuthComplete() {} });
   };
 
   const tree = render();
   assert.ok(hasText(tree, "auth.cloudNotConfigured"));
-  const button = findButtonByText(tree, "auth.getStarted");
-  assert.ok(button, "continue-without-account button should render");
-  button.props.onClick();
-  assert.equal(continuedWithoutAccount, 1);
+  assert.ok(!hasText(tree, "auth.getStarted"), "no bypass button should render");
+  assert.ok(
+    !findButtonByText(tree, "auth.getStarted"),
+    "there must be no way to proceed without SSO configured"
+  );
+});
+
+test("signed-out state never offers a way to skip sign-in", async (t) => {
+  installBrowserGlobals(t, { window: { electronAPI: {} } });
+  t.after(() => {
+    delete globalThis.__authenticationStepHarness;
+  });
+  const harness = createHarness();
+  globalThis.__authenticationStepHarness = harness;
+  const AuthenticationStep = await loadAuthenticationStep(t);
+
+  const render = () => {
+    harness.cursor = 0;
+    return AuthenticationStep({ onAuthComplete() {} });
+  };
+
+  const tree = render();
+  assert.ok(findButtonByText(tree, "auth.sso.continueWithSSO"), "sign-in button should render");
+  assert.ok(
+    !hasText(tree, "auth.emailStep.continueWithoutAccount"),
+    "no guest/skip-account escape should render"
+  );
 });
 
 test("sign-in failure surfaces the error and re-enables the button", async (t) => {

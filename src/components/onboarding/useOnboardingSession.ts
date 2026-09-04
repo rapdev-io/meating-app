@@ -17,19 +17,16 @@ function readInitialSession(): OnboardingSession {
   const stored = parseOnboardingSession(localStorage.getItem(ONBOARDING_SESSION_KEY));
   if (stored) return stored;
 
+  // authPath stays null (unauthenticated) for any recovered legacy session —
+  // including a pre-existing in-progress "guest" session that now fails
+  // parseOnboardingSession above. getOnboardingRoute then returns just
+  // ["auth"], so the migrated step is discarded and everyone re-enters at
+  // sign-in. This costs an already-signed-in account nothing: AuthenticationStep
+  // auto-advances past "auth" the instant isSignedIn resolves true.
   const session = createOnboardingSession();
   session.currentStepId = migrateLegacyOnboardingStep(
     localStorage.getItem(LEGACY_ONBOARDING_STEP_KEY)
   );
-  if (localStorage.getItem("authenticationSkipped") === "true") {
-    session.authPath = "guest";
-  } else if (session.currentStepId !== "auth") {
-    // A legacy save mid-flow means the auth step was already behind the user.
-    // Left null, getOnboardingRoute returns ["auth"] and the reconcile clamp
-    // overwrites the migrated step before anything can restore it — the one
-    // group the legacy map exists for would always restart from scratch.
-    session.authPath = "account";
-  }
   return session;
 }
 

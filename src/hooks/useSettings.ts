@@ -101,8 +101,11 @@ export interface PrivacySettings {
   saveDiscardedTranscriptions: boolean;
 }
 
+export type ColorPalette = "default" | "pumpkin-spice" | "synthwave";
+
 export interface ThemeSettings {
   theme: "light" | "dark" | "auto";
+  colorPalette: ColorPalette;
 }
 
 export interface ChatAgentSettings {
@@ -302,6 +305,8 @@ function useSettingsInternal() {
     meetingHotkeyLayoutMode: store.meetingHotkeyLayoutMode,
     setMeetingHotkeyLayoutMode: store.setMeetingHotkeyLayoutMode,
     theme: store.theme,
+    colorPalette: store.colorPalette,
+    setColorPalette: store.setColorPalette,
     setUseLocalWhisper: store.setUseLocalWhisper,
     setWhisperModel: store.setWhisperModel,
     setUiLanguage: store.setUiLanguage,

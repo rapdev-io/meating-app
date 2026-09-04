@@ -23,34 +23,21 @@ test("account flow includes the complete guided setup", async () => {
   );
 });
 
-test("guest flow keeps permissions and the hotkey before setup choice", async () => {
-  const { getOnboardingRoute } = await load();
-  // finalizeOnboarding registers the dictation hotkey on every path, so guests
-  // must still grant the mic and see the key they are getting.
-  assert.deepEqual(getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: true }), [
-    "auth",
-    "permissions",
-    "dictation-hotkey",
-    "activation-mode",
-    "setup-choice",
-  ]);
-});
-
 test("every dictation route restores activation mode setup after shortcut capture", async () => {
   const { getOnboardingRoute } = await load();
-  const accountRoute = getOnboardingRoute({
+  const withAgent = getOnboardingRoute({
     authPath: "account",
     setupMode: null,
     agentAllowed: true,
   });
-  const guestRoute = getOnboardingRoute({
-    authPath: "guest",
+  const withoutAgent = getOnboardingRoute({
+    authPath: "account",
     setupMode: null,
-    agentAllowed: true,
+    agentAllowed: false,
   });
 
-  assert.equal(accountRoute[accountRoute.indexOf("dictation-hotkey") + 1], "activation-mode");
-  assert.equal(guestRoute[guestRoute.indexOf("dictation-hotkey") + 1], "activation-mode");
+  assert.equal(withAgent[withAgent.indexOf("dictation-hotkey") + 1], "activation-mode");
+  assert.equal(withoutAgent[withoutAgent.indexOf("dictation-hotkey") + 1], "activation-mode");
 });
 
 test("policy removes assistant states", async () => {
@@ -64,16 +51,8 @@ test("policy removes assistant states", async () => {
 test("setup choice appends the selected two-stage route", async () => {
   const { getOnboardingRoute } = await load();
   assert.deepEqual(
-    getOnboardingRoute({ authPath: "guest", setupMode: "byok", agentAllowed: true }),
-    [
-      "auth",
-      "permissions",
-      "dictation-hotkey",
-      "activation-mode",
-      "setup-choice",
-      "byok-dictation",
-      "byok-assistant",
-    ]
+    getOnboardingRoute({ authPath: "account", setupMode: "byok", agentAllowed: true }).slice(-2),
+    ["byok-dictation", "byok-assistant"]
   );
   assert.deepEqual(
     getOnboardingRoute({ authPath: "account", setupMode: "local", agentAllowed: false }).slice(-2),
@@ -114,7 +93,7 @@ test("only a signed-in account with an uncommitted choice skips enterprise setup
   assert.equal(shouldSkipOnboardingSetupChoice(base), true);
   assert.equal(shouldSkipOnboardingSetupChoice({ ...base, setupMode: "cloud" }), true);
   assert.equal(shouldSkipOnboardingSetupChoice({ ...base, setupMode: "local" }), false);
-  assert.equal(shouldSkipOnboardingSetupChoice({ ...base, authPath: "guest" }), false);
+  assert.equal(shouldSkipOnboardingSetupChoice({ ...base, authPath: null }), false);
   assert.equal(shouldSkipOnboardingSetupChoice({ ...base, isSignedIn: false }), false);
   assert.equal(shouldSkipOnboardingSetupChoice({ ...base, activeWorkspace: null }), false);
 });
@@ -148,6 +127,9 @@ test("versioned sessions reject malformed or old data", async () => {
     parseOnboardingSession(JSON.stringify({ ...session, selfHostedRequested: "yes" })),
     null
   );
+  // No account is optional: a pre-existing in-progress "guest" session (from
+  // before sign-in became mandatory) must be discarded, not resumed.
+  assert.equal(parseOnboardingSession(JSON.stringify({ ...session, authPath: "guest" })), null);
 });
 
 test("an explicit restart clears every persisted route choice and returns to auth", async () => {
@@ -210,8 +192,9 @@ test("an off-route assistant step clamps to its neighbour, not the end of the ro
 
 test("route helpers recover from ineligible steps", async () => {
   const { getNextOnboardingStep, getOnboardingRoute, reconcileStepWithRoute } = await load();
-  const route = getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: true });
-  assert.equal(reconcileStepWithRoute("assistant-demo", route), "setup-choice");
+  // No setupMode chosen yet, so the provider steps aren't on the route.
+  const route = getOnboardingRoute({ authPath: "account", setupMode: null, agentAllowed: false });
+  assert.equal(reconcileStepWithRoute("byok-dictation", route), "setup-choice");
   assert.equal(getNextOnboardingStep("auth", route), "permissions");
   assert.equal(getNextOnboardingStep("setup-choice", route), null);
 });
@@ -249,24 +232,9 @@ test("progress total tracks the conditional parts of the route", async () => {
   const byok = getOnboardingRoute({ ...context, setupMode: "byok" });
   assert.deepEqual(getOnboardingProgress("setup-choice", byok), { index: 8, total: 11 });
   assert.deepEqual(getOnboardingProgress("byok-assistant", byok), { index: 10, total: 11 });
-});
 
-test("progress counts only the guest steps that draw a footer", async () => {
-  const { getOnboardingProgress, getOnboardingRoute } = await load();
-  // auth and permissions are compact, so the pre-plan guest route counts
-  // dictation-hotkey, activation-mode and setup-choice: a three-dot row.
-  const guest = getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: true });
-  assert.deepEqual(getOnboardingProgress("setup-choice", guest), { index: 2, total: 3 });
-
-  const guestByok = getOnboardingRoute({
-    authPath: "guest",
-    setupMode: "byok",
-    agentAllowed: true,
-  });
-  assert.deepEqual(getOnboardingProgress("setup-choice", guestByok), { index: 2, total: 5 });
-
-  // An off-route step has no position to report.
-  assert.equal(getOnboardingProgress("notes", guestByok), null);
+  // A step from the other provider's route has no position to report.
+  assert.equal(getOnboardingProgress("local-dictation", byok), null);
 });
 
 test("required models insert a blocking step right after auth — account path only", async () => {
@@ -279,14 +247,14 @@ test("required models insert a blocking step right after auth — account path o
   });
   assert.deepEqual(route.slice(0, 3), ["auth", "required-models", "permissions"]);
 
-  // Guests never fetch a policy, so the gate cannot apply to them.
-  const guest = getOnboardingRoute({
-    authPath: "guest",
+  // Not yet past the auth step: the gate cannot apply before sign-in.
+  const preAuth = getOnboardingRoute({
+    authPath: null,
     setupMode: null,
     agentAllowed: true,
     requiredModelsPending: true,
   });
-  assert.equal(guest.includes("required-models"), false);
+  assert.equal(preAuth.includes("required-models"), false);
 
   // Absent flag (older callers, nothing missing) leaves the route unchanged.
   const noFlag = getOnboardingRoute({ authPath: "account", setupMode: null, agentAllowed: true });

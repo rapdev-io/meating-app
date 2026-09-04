@@ -1064,7 +1064,6 @@
     "emailStep": {
       "checkingEmail": "正在检查您的邮箱...",
       "continueWithEmail": "使用邮箱继续",
-      "continueWithoutAccount": "无需账户，继续使用",
       "emailLabel": "邮箱",
       "emailPlaceholder": "you@example.com",
       "useDifferentEmail": "使用其他邮箱"
@@ -1080,7 +1079,6 @@
       "invalidCredentials": "邮箱或密码无效",
       "plusAliasUnsupported": "不支持包含“+”的邮箱别名"
     },
-    "getStarted": "开始使用",
     "legal": {
       "and": "和",
       "prefix": "继续即表示你同意我们的",
@@ -1128,7 +1126,7 @@
       "continueWithMicrosoft": "使用 Microsoft 继续",
       "protocolUnavailable": "无法通过浏览器登录 — 请在系统的“默认应用”设置中重新注册 openwhispr:// 协议。"
     },
-    "welcomeSubtitle": "用语音完成一切",
+    "welcomeSubtitle": "这是一句不错的标语",
     "welcomeTitle": "欢迎使用 OpenWhispr",
     "sessionExpired": "会话已过期，请重新登录。"
   },

@@ -7,14 +7,12 @@ import { AlertCircle, ArrowRight, Building2, Check, Loader2 } from "lucide-react
 import { CompactOnboardingFrame } from "./onboarding/OnboardingShell";
 
 interface AuthenticationStepProps {
-  onContinueWithoutAccount?: () => void;
   onAuthComplete: () => void;
   /** Rendering inside SignInDialog rather than the onboarding window. */
   embedded?: boolean;
 }
 
 export default function AuthenticationStep({
-  onContinueWithoutAccount,
   onAuthComplete,
   embedded = false,
 }: AuthenticationStepProps) {
@@ -58,15 +56,9 @@ export default function AuthenticationStep({
         <div className={`${frameInset("pt-44")} text-center`}>
           <h1 className={titleClass}>{t("auth.welcomeTitle")}</h1>
           <p className="mt-3 text-base text-muted-foreground">{t("auth.welcomeSubtitle")}</p>
-          <div className="mt-8 rounded-xl border border-warning/20 bg-warning/5 p-3 text-sm text-warning">
+          <div className="mt-8 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
             {t("auth.cloudNotConfigured")}
           </div>
-          {onContinueWithoutAccount && (
-            <Button onClick={onContinueWithoutAccount} className="mt-3 h-12 w-full rounded-full">
-              {t("auth.getStarted")}
-              <ArrowRight className="size-4" />
-            </Button>
-          )}
         </div>
       </CompactOnboardingFrame>
     );
@@ -125,21 +117,6 @@ export default function AuthenticationStep({
           <div className="mt-2 flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-left">
             <AlertCircle className="size-3.5 shrink-0 text-destructive" />
             <p className="text-xs text-destructive">{error}</p>
-          </div>
-        )}
-
-        {onContinueWithoutAccount && (
-          <div className="pt-5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onContinueWithoutAccount}
-              className="w-full rounded-full text-base font-normal text-[var(--onboarding-text-secondary)] hover:bg-[var(--onboarding-surface-hover)] hover:text-[var(--onboarding-text-primary)]"
-              disabled={isSigningIn}
-            >
-              {t("auth.emailStep.continueWithoutAccount")}
-            </Button>
           </div>
         )}
       </div>

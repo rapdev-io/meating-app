@@ -1,6 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGroq } from "@ai-sdk/groq";
-import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { LanguageModel } from "ai";
 import { getTinfoilLanguageModel } from "./tinfoilClient";
@@ -37,15 +36,11 @@ export async function getAIModel(
       return createOpenAI({ apiKey })(model);
     case "groq":
       return createGroq({ apiKey })(model);
-    case "anthropic":
-      // The assistant panel runs in the pill window, which keeps Chromium's
-      // default webSecurity (the deleted agent overlay disabled it). Anthropic
-      // only answers browser-origin requests that opt in with this header;
-      // the dictation path avoids the issue by going through IPC.
-      return createAnthropic({
-        apiKey,
-        headers: { "anthropic-dangerous-direct-browser-access": "true" },
-      })(model);
+    // "anthropic" is deliberately absent: it runs via createAnthropicChatModel
+    // (main-process doStream over IPC) instead — see ReasoningService.ts.
+    // Anthropic's API refuses direct browser-origin requests, so a renderer
+    // fetch here is not viable without the fragile "dangerous direct browser
+    // access" opt-in header.
     case "gemini":
       return createGoogleGenerativeAI({ apiKey })(model);
     case "tinfoil":

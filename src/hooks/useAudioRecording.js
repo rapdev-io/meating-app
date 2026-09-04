@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import APP_CONFIG from "../config/appIdentity.json";
 import AudioManager from "../helpers/audioManager";
 import logger from "../utils/logger";
 import { playStartCue, playStopCue } from "../utils/dictationCues";
@@ -192,7 +193,8 @@ export const useAudioRecording = (toast, options = {}) => {
         // Await it only when it can change the start decision (signed-in
         // OpenWhispr-cloud streaming); for local STT or a signed-out session the
         // fetch stalls on auth resolution and would delay the mic open (#1673).
-        if (!audioManagerRef.current.sttConfig) {
+        // get-stt-config is an OpenWhispr Cloud endpoint; never initialized in Protein.
+        if (APP_CONFIG.enableOpenWhisprCloud && !audioManagerRef.current.sttConfig) {
           const configFetch = (async () => {
             const config = await window.electronAPI.getSttConfig?.();
             if (config?.success) {
@@ -689,14 +691,17 @@ export const useAudioRecording = (toast, options = {}) => {
     const unsubscribePolicy = usePolicyStore.subscribe(() => {
       window.electronAPI.setScreenContextEnabled?.(getSettings().voiceAgentScreenContext);
     });
-    window.electronAPI.getSttConfig?.().then((config) => {
-      if (config?.success && audioManagerRef.current) {
-        audioManagerRef.current.setSttConfig(config);
-        if (audioManagerRef.current.shouldUseStreaming()) {
-          audioManagerRef.current.warmupStreamingConnection();
+    // get-stt-config is an OpenWhispr Cloud endpoint; never initialized in Protein.
+    if (APP_CONFIG.enableOpenWhisprCloud) {
+      window.electronAPI.getSttConfig?.().then((config) => {
+        if (config?.success && audioManagerRef.current) {
+          audioManagerRef.current.setSttConfig(config);
+          if (audioManagerRef.current.shouldUseStreaming()) {
+            audioManagerRef.current.warmupStreamingConnection();
+          }
         }
-      }
-    });
+      });
+    }
 
     const handleToggle = async ({
       voiceAgentRequested = false,

@@ -10,7 +10,9 @@ import ConversationList from "./ConversationList";
 import EmptyChatState from "./EmptyChatState";
 import { ConfirmDialog } from "../ui/dialog";
 import { useDialogs } from "../../hooks/useDialogs";
+import { useToast } from "../ui/useToast";
 import { getCachedPlatform } from "../../utils/platform";
+import APP_CONFIG from "../../config/appIdentity.json";
 
 const CommandSearch = lazy(() => import("../CommandSearch"));
 
@@ -35,6 +37,7 @@ export default function ChatView() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showSearch, setShowSearch] = useState(false);
   const { confirmDialog, showConfirmDialog, hideConfirmDialog } = useDialogs();
+  const { toast } = useToast();
 
   const persistence = useChatPersistence({
     conversationId: activeConversationId,
@@ -113,6 +116,36 @@ export default function ChatView() {
     [activeConversationId, handleNewChat, showConfirmDialog, t]
   );
 
+  const handleExportToGoogleDrive = useCallback(
+    async (id: number) => {
+      try {
+        const result = await window.electronAPI?.googleDriveExportChat?.(id);
+        if (result?.success) {
+          toast({ title: t("notes.editor.exportedToGoogleDrive"), description: result.name });
+        } else if (result?.code === "NOT_CONNECTED" || result?.code === "NOT_CONFIGURED") {
+          toast({
+            title: t("controlPanel.history.exportNotConnectedTitle"),
+            description: t("controlPanel.history.exportNotConnectedDescription"),
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: t("controlPanel.history.exportFailedTitle"),
+            description: result?.error || t("controlPanel.history.exportFailedDescription"),
+            variant: "destructive",
+          });
+        }
+      } catch {
+        toast({
+          title: t("controlPanel.history.exportFailedTitle"),
+          description: t("controlPanel.history.exportFailedDescription"),
+          variant: "destructive",
+        });
+      }
+    },
+    [t, toast]
+  );
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const mod = platform === "darwin" ? e.metaKey : e.ctrlKey;
@@ -157,6 +190,9 @@ export default function ChatView() {
             onOpenSearch={() => setShowSearch(true)}
             onArchive={handleArchive}
             onDelete={handleDelete}
+            onExportToGoogleDrive={
+              APP_CONFIG.internalBuild ? handleExportToGoogleDrive : undefined
+            }
             refreshKey={refreshKey}
           />
         </div>

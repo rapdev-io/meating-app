@@ -13,6 +13,7 @@ import { useTheme } from "./hooks/useTheme";
 import { usePolicyStore } from "./stores/policyStore";
 import { resolveSettledControlPanelWindowMode } from "./utils/controlPanelWindowMode.ts";
 import { isControlPanelWindow } from "./utils/windowContext.ts";
+import appIcon from "./assets/icon.png";
 
 // Either marker means the flow is mid-way: the legacy step key is kept for
 // back-compat, the v2 session is what the rebuilt flow actually persists.
@@ -86,9 +87,6 @@ function MainApp() {
     if (!authLoaded) return;
 
     const onboardingCompleted = localStorage.getItem("onboardingCompleted") === "true";
-    const authSkipped =
-      localStorage.getItem("authenticationSkipped") === "true" ||
-      localStorage.getItem("skipAuth") === "true";
     const onboardingInProgress = isOnboardingInProgress();
     const isReturningUser =
       !onboardingCompleted && isSignedIn && !isGracePeriodOnly && !onboardingInProgress;
@@ -102,7 +100,7 @@ function MainApp() {
     if (isControlPanel) {
       if (!resolved) {
         setShowOnboarding(true);
-      } else if (!isSignedIn && !authSkipped) {
+      } else if (!isSignedIn) {
         setNeedsReauth(true);
       }
     }
@@ -119,14 +117,11 @@ function MainApp() {
   useEffect(() => {
     if (!isControlPanel || !authLoaded) return;
     // Fast path: a user who already finished onboarding can never enter the
-    // compact flow only when their session or guest choice is still valid.
-    // Signed-out account users fall through so reauthentication can select the
-    // compact window without first flashing restored control-panel dimensions.
+    // compact flow only when their session is still valid. Signed-out users
+    // fall through so reauthentication can select the compact window without
+    // first flashing restored control-panel dimensions.
     const completed = localStorage.getItem("onboardingCompleted") === "true";
-    const authSkipped =
-      localStorage.getItem("authenticationSkipped") === "true" ||
-      localStorage.getItem("skipAuth") === "true";
-    if (completed && !isOnboardingInProgress() && (isSignedIn || authSkipped)) {
+    if (completed && !isOnboardingInProgress() && isSignedIn) {
       void window.electronAPI?.setOnboardingWindowMode?.("restore");
     }
   }, [authLoaded, isControlPanel, isSignedIn]);
@@ -184,16 +179,7 @@ function MainApp() {
   }
 
   if (isControlPanel && needsReauth) {
-    return (
-      <ReauthenticationScreen
-        onContinueWithoutAccount={() => {
-          localStorage.setItem("authenticationSkipped", "true");
-          localStorage.setItem("skipAuth", "true");
-          setNeedsReauth(false);
-        }}
-        onAuthComplete={() => setNeedsReauth(false)}
-      />
-    );
+    return <ReauthenticationScreen onAuthComplete={() => setNeedsReauth(false)} />;
   }
 
   return isControlPanel ? (
@@ -213,17 +199,18 @@ function LoadingFallback({ message }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="flex flex-col items-center gap-4 animate-[scale-in_300ms_ease-out]">
-        <svg
-          viewBox="0 0 1024 1024"
-          className="w-12 h-12 drop-shadow-[0_2px_8px_rgba(37,99,235,0.18)] dark:drop-shadow-[0_2px_12px_rgba(100,149,237,0.25)]"
-          aria-label="OpenWhispr"
-        >
-          <rect width="1024" height="1024" rx="241" fill="#2056DF" />
-          <circle cx="512" cy="512" r="314" fill="#2056DF" stroke="white" strokeWidth="74" />
-          <path d="M512 383V641" stroke="white" strokeWidth="74" strokeLinecap="round" />
-          <path d="M627 457V568" stroke="white" strokeWidth="74" strokeLinecap="round" />
-          <path d="M397 457V568" stroke="white" strokeWidth="74" strokeLinecap="round" />
-        </svg>
+        {/* icon.png already bakes in the rounded-square corners as transparency
+            (see Image and Icon Assets in CLAUDE.md) — no CSS rounding on top. */}
+        <img
+          src={appIcon}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          decoding="async"
+          width={48}
+          height={48}
+          className="w-12 h-12 drop-shadow-[0_2px_8px_rgba(11,45,76,0.25)] dark:drop-shadow-[0_2px_12px_rgba(11,45,76,0.4)]"
+        />
         <div className="w-7 h-7 rounded-full border-[2.5px] border-transparent border-t-primary animate-[spinner-rotate_0.8s_cubic-bezier(0.4,0,0.2,1)_infinite] motion-reduce:animate-none motion-reduce:border-t-muted-foreground motion-reduce:opacity-50" />
         {fallbackMessage && (
           <p className="text-[13px] font-medium text-muted-foreground dark:text-foreground/60 tracking-[-0.01em]">

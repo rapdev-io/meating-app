@@ -105,6 +105,7 @@ const PersonalNotesView = React.lazy(() => import("./notes/PersonalNotesView"));
 const DictionaryView = React.lazy(() => import("./DictionaryView"));
 const UploadAudioView = React.lazy(() => import("./notes/UploadAudioView"));
 const IntegrationsView = React.lazy(() => import("./IntegrationsView"));
+const GoogleDriveIntegrationsView = React.lazy(() => import("./GoogleDriveIntegrationsView"));
 const ChatView = React.lazy(() => import("./chat/ChatView"));
 const CommandSearch = React.lazy(() => import("./CommandSearch"));
 
@@ -480,7 +481,9 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
   }, [toast, t]);
 
   useEffect(() => {
-    fetchStreamingProviders();
+    // note-recording-config is an OpenWhispr Cloud endpoint (streaming
+    // transcription providers for meetings); never initialized in Protein.
+    if (APP_CONFIG.enableOpenWhisprCloud) fetchStreamingProviders();
   }, []);
 
   const handleMeetingRecordingRequestHandled = useCallback(
@@ -541,6 +544,39 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
       });
     },
     [showConfirmDialog, showAlertDialog, t]
+  );
+
+  const exportTranscriptionToGoogleDrive = useCallback(
+    async (id: number) => {
+      try {
+        const result = await window.electronAPI?.googleDriveExportTranscript?.(id);
+        if (result?.success) {
+          toast({
+            title: t("controlPanel.history.exportSuccessTitle"),
+            description: result.name,
+          });
+        } else if (result?.code === "NOT_CONNECTED" || result?.code === "NOT_CONFIGURED") {
+          toast({
+            title: t("controlPanel.history.exportNotConnectedTitle"),
+            description: t("controlPanel.history.exportNotConnectedDescription"),
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: t("controlPanel.history.exportFailedTitle"),
+            description: result?.error || t("controlPanel.history.exportFailedDescription"),
+            variant: "destructive",
+          });
+        }
+      } catch {
+        toast({
+          title: t("controlPanel.history.exportFailedTitle"),
+          description: t("controlPanel.history.exportFailedDescription"),
+          variant: "destructive",
+        });
+      }
+    },
+    [toast, t]
   );
 
   const clearAllTranscriptions = useCallback(() => {
@@ -1179,6 +1215,9 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
                   setShowSettings(true);
                 }}
                 onOpenIntegrations={() => setActiveView("integrations")}
+                onExportToGoogleDrive={
+                  APP_CONFIG.internalBuild ? exportTranscriptionToGoogleDrive : undefined
+                }
               />
             )}
             {activeView === "chat" && agentAllowedByPolicy && (
@@ -1220,17 +1259,22 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
                 />
               </Suspense>
             )}
-            {activeView === "integrations" && (
-              <Suspense fallback={null}>
-                <IntegrationsView
-                  isPaid={usage?.hasPaidAccessOptimistic ?? false}
-                  onUpgrade={() => {
-                    setSettingsSection("plansBilling");
-                    setShowSettings(true);
-                  }}
-                />
-              </Suspense>
-            )}
+            {activeView === "integrations" &&
+              (APP_CONFIG.internalBuild ? (
+                <Suspense fallback={null}>
+                  <GoogleDriveIntegrationsView />
+                </Suspense>
+              ) : (
+                <Suspense fallback={null}>
+                  <IntegrationsView
+                    isPaid={usage?.hasPaidAccessOptimistic ?? false}
+                    onUpgrade={() => {
+                      setSettingsSection("plansBilling");
+                      setShowSettings(true);
+                    }}
+                  />
+                </Suspense>
+              ))}
           </div>
         </main>
         {!isSidePanelLayout && (

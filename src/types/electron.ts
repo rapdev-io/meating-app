@@ -1659,6 +1659,23 @@ declare global {
         config: any
       ) => Promise<{ success: boolean; text?: string; error?: string }>;
 
+      // Anthropic BYOK streaming for the chat/assistant pipeline (runs in the
+      // main process to avoid the browser CORS restriction on Anthropic's API)
+      anthropicStreamStart?: (payload: {
+        streamId: string;
+        modelId: string;
+        options: Record<string, unknown>;
+      }) => Promise<{ success: boolean; error?: string }>;
+      anthropicStreamCancel?: (streamId: string) => Promise<void>;
+      onAnthropicStreamPart?: (
+        callback: (payload: {
+          streamId: string;
+          part?: unknown;
+          done?: boolean;
+          error?: string;
+        }) => void
+      ) => () => void;
+
       // Enterprise reasoning (Bedrock, Azure, Vertex)
       processEnterpriseReasoning: (
         text: string,

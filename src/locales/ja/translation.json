@@ -1065,7 +1065,6 @@
     "emailStep": {
       "checkingEmail": "メールアドレスを確認しています...",
       "continueWithEmail": "メールで続ける",
-      "continueWithoutAccount": "アカウントなしで続ける",
       "emailLabel": "メールアドレス",
       "emailPlaceholder": "you@example.com",
       "useDifferentEmail": "別のメールアドレスを使用"
@@ -1081,7 +1080,6 @@
       "invalidCredentials": "メールアドレスまたはパスワードが正しくありません",
       "plusAliasUnsupported": "「+」を含むメールエイリアスはサポートされていません"
     },
-    "getStarted": "はじめる",
     "legal": {
       "and": "および",
       "prefix": "続行すると、",
@@ -1129,7 +1127,7 @@
       "continueWithMicrosoft": "Microsoft で続ける",
       "protocolUnavailable": "ブラウザでのサインインを利用できません — システムの「既定のアプリ」設定で openwhispr:// プロトコルを再登録してください。"
     },
-    "welcomeSubtitle": "すべてを声で",
+    "welcomeSubtitle": "いいキャッチコピーだ",
     "welcomeTitle": "OpenWhispr へようこそ"
   },
   "cleanupPrompt": "クリーンアップ",

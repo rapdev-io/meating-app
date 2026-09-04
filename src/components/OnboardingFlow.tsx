@@ -360,19 +360,15 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   );
 
   const syncUseCases = useCallback(() => {
-    if (!isSignedIn || session.authPath === "guest") return;
+    // /api/onboarding-intent is an OpenWhispr Cloud endpoint; never initialized
+    // in Protein (isSignedIn here is company SSO, not an OpenWhispr account).
+    if (!APP_CONFIG.enableOpenWhisprCloud || !isSignedIn) return;
     cloudPost("/api/onboarding-intent", {
       useCases: settings.onboardingUseCases,
       note: settings.onboardingUseCaseNote || undefined,
       spokenLanguages: settings.spokenLanguages,
     }).catch((error) => logger.warn("Failed to sync onboarding intent", { error }, "onboarding"));
-  }, [
-    isSignedIn,
-    session.authPath,
-    settings.onboardingUseCaseNote,
-    settings.onboardingUseCases,
-    settings.spokenLanguages,
-  ]);
+  }, [isSignedIn, settings.onboardingUseCaseNote, settings.onboardingUseCases, settings.spokenLanguages]);
 
   const finalizeOnboarding = useCallback(
     async (mode: OnboardingCompletionMode, options: { localPending?: boolean } = {}) => {
@@ -414,9 +410,10 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           clearPendingLocalModels();
         }
 
-        const skippedAuth = session.authPath === "guest";
-        localStorage.setItem("authenticationSkipped", String(skippedAuth));
-        localStorage.setItem("skipAuth", String(skippedAuth));
+        // Every account is required to sign in, so no completed onboarding
+        // session should carry a stale guest bypass forward.
+        localStorage.removeItem("authenticationSkipped");
+        localStorage.removeItem("skipAuth");
         clearSession();
         localStorage.setItem("onboardingCompleted", "true");
         onComplete();
@@ -427,16 +424,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         setIsFinishing(false);
       }
     },
-    [
-      clearSession,
-      dictationHotkey,
-      isFinishing,
-      onComplete,
-      registerHotkey,
-      session.authPath,
-      t,
-      withExtraDictationHotkeys,
-    ]
+    [clearSession, dictationHotkey, isFinishing, onComplete, registerHotkey, t, withExtraDictationHotkeys]
   );
 
   // Sessions saved on the old setup-choice step reconcile back to Notes once an
@@ -660,13 +648,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         return (
           <div className="min-h-full w-full">
             <CompactAuthenticationFlow
-              onContinueWithoutAccount={() => {
-                // Guests continue onto their route's permissions step — jumping
-                // straight to setup-choice would skip the permission grants and
-                // hotkey the guest route exists to guarantee (see flow.ts).
-                setAuthPath("guest");
-                goTo("permissions");
-              }}
               onAuthComplete={() => {
                 setAuthPath("account");
                 goTo(session.setupMode === "cloud" ? "setup-choice" : "permissions");

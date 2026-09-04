@@ -22,7 +22,7 @@ export type OnboardingStepId =
   | "local-dictation"
   | "local-assistant";
 
-export type OnboardingAuthPath = "account" | "guest" | null;
+export type OnboardingAuthPath = "account" | null;
 export type OnboardingSetupMode = "cloud" | "byok" | "local" | null;
 
 export interface OnboardingSession {
@@ -40,9 +40,9 @@ export interface OnboardingRouteContext {
   agentAllowed: boolean;
   /**
    * Org-required local models are missing on disk. Inserts the blocking
-   * "required-models" step right after auth — account path only, since guests
-   * never fetch a policy. Callers latch this once the step is entered so a
-   * mid-download policy refresh can't yank the step from under the user.
+   * "required-models" step right after auth. Callers latch this once the
+   * step is entered so a mid-download policy refresh can't yank the step
+   * from under the user.
    */
   requiredModelsPending?: boolean;
   /** A confirmed Enterprise workspace is already provisioned outside onboarding. */
@@ -138,27 +138,12 @@ export function getOnboardingRoute(context: OnboardingRouteContext): OnboardingS
 
   const setupChoice = context.skipSetupChoice ? [] : (["setup-choice"] as OnboardingStepId[]);
 
-  const route =
-    context.authPath === "guest"
-      ? // Guests still need the permission grants and a hotkey they have seen:
-        // finalizeOnboarding registers dictationHotkey either way, and skipping
-        // these steps shipped users who neither granted the mic nor knew their
-        // trigger key.
-        ([
-          "auth",
-          "permissions",
-          "dictation-hotkey",
-          "activation-mode",
-          "setup-choice",
-        ] as OnboardingStepId[])
-      : [
-          ...ACCOUNT_ROUTE,
-          ...(context.agentAllowed
-            ? (["assistant-hotkey", "assistant-demo"] as OnboardingStepId[])
-            : []),
-          "notes" as const,
-          ...setupChoice,
-        ];
+  const route: OnboardingStepId[] = [
+    ...ACCOUNT_ROUTE,
+    ...(context.agentAllowed ? (["assistant-hotkey", "assistant-demo"] as OnboardingStepId[]) : []),
+    "notes" as const,
+    ...setupChoice,
+  ];
 
   if (context.requiredModelsPending && context.authPath === "account") {
     route.splice(route.indexOf("auth") + 1, 0, "required-models");
@@ -194,7 +179,7 @@ export function parseOnboardingSession(value: string | null): OnboardingSession 
 
     const authPath = parsed.authPath;
     const setupMode = parsed.setupMode;
-    if (authPath !== null && authPath !== "account" && authPath !== "guest") return null;
+    if (authPath !== null && authPath !== "account") return null;
     if (
       setupMode !== null &&
       setupMode !== "cloud" &&

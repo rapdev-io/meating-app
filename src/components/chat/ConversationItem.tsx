@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { MoreHorizontal, Archive, ArchiveRestore, Trash2 } from "lucide-react";
+import { MoreHorizontal, Archive, ArchiveRestore, Trash2, UploadCloud } from "lucide-react";
+import APP_CONFIG from "../../config/appIdentity.json";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ interface ConversationItemProps {
   onClick: () => void;
   onArchive: (id: number) => void;
   onDelete: (id: number) => void;
+  onExportToGoogleDrive?: (id: number) => void;
 }
 
 function formatTimestamp(dateStr: string): string {
@@ -51,6 +53,7 @@ export default function ConversationItem({
   onClick,
   onArchive,
   onDelete,
+  onExportToGoogleDrive,
 }: ConversationItemProps) {
   const { t } = useTranslation();
   const isArchived = !!conversation.is_archived;
@@ -86,6 +89,21 @@ export default function ConversationItem({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={4} className="min-w-36">
+                {APP_CONFIG.internalBuild && onExportToGoogleDrive && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onExportToGoogleDrive(conversation.id);
+                      }}
+                      className="text-xs gap-2 rounded-lg px-2.5 py-1.5 cursor-pointer focus:bg-foreground/5"
+                    >
+                      <UploadCloud size={12} className="text-muted-foreground/80" />
+                      {t("chat.exportToGoogleDrive")}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();

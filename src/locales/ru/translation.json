@@ -1064,7 +1064,6 @@
     "emailStep": {
       "checkingEmail": "Проверяем адрес электронной почты...",
       "continueWithEmail": "Продолжить с электронной почтой",
-      "continueWithoutAccount": "Продолжить без аккаунта",
       "emailLabel": "Электронная почта",
       "emailPlaceholder": "you@example.com",
       "useDifferentEmail": "Использовать другой адрес"
@@ -1080,7 +1079,6 @@
       "invalidCredentials": "Неверный адрес электронной почты или пароль",
       "plusAliasUnsupported": "Алиасы электронной почты с символом «+» не поддерживаются"
     },
-    "getStarted": "Начать",
     "legal": {
       "and": "и",
       "prefix": "Продолжая, вы соглашаетесь с нашими",
@@ -1128,7 +1126,7 @@
       "continueWithMicrosoft": "Продолжить с Microsoft",
       "protocolUnavailable": "Вход через браузер недоступен — повторно зарегистрируйте протокол openwhispr:// в системных настройках приложений по умолчанию."
     },
-    "welcomeSubtitle": "Используйте голос для всего",
+    "welcomeSubtitle": "Вот хороший слоган",
     "welcomeTitle": "Добро пожаловать в OpenWhispr",
     "sessionExpired": "Сессия истекла. Пожалуйста, войдите снова."
   },

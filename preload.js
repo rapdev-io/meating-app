@@ -624,6 +624,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
   processRapdevReasoning: (text, modelId, agentName, config) =>
     ipcRenderer.invoke("process-rapdev-reasoning", text, modelId, agentName, config),
 
+  // Anthropic BYOK streaming for the chat/assistant pipeline — runs in the
+  // main process to avoid the browser CORS restriction on Anthropic's API
+  // (see anthropic-stream-start in ipcHandlers.js).
+  anthropicStreamStart: (payload) => ipcRenderer.invoke("anthropic-stream-start", payload),
+  anthropicStreamCancel: (streamId) => ipcRenderer.invoke("anthropic-stream-cancel", streamId),
+  onAnthropicStreamPart: registerListener(
+    "anthropic-stream-part",
+    (callback) => (_event, payload) => callback(payload)
+  ),
+
   // Enterprise reasoning (Bedrock, Azure, Vertex) — runs in main process so
   // Node-only SDKs (AWS/Azure/Google credential providers) can resolve.
   processEnterpriseReasoning: (text, modelId, agentName, config) =>

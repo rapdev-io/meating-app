@@ -1064,7 +1064,6 @@
     "emailStep": {
       "checkingEmail": "正在檢查您的電子郵件...",
       "continueWithEmail": "使用電子郵件繼續",
-      "continueWithoutAccount": "無需帳號，繼續使用",
       "emailLabel": "電子郵件",
       "emailPlaceholder": "you@example.com",
       "useDifferentEmail": "使用其他電子郵件"
@@ -1080,7 +1079,6 @@
       "invalidCredentials": "電子郵件或密碼不正確",
       "plusAliasUnsupported": "不支援含「+」的電子郵件別名"
     },
-    "getStarted": "開始使用",
     "legal": {
       "and": "和",
       "prefix": "繼續即表示你同意我們的",
@@ -1128,7 +1126,7 @@
       "continueWithMicrosoft": "使用 Microsoft 繼續",
       "protocolUnavailable": "無法透過瀏覽器登入 — 請在系統的「預設應用程式」設定中重新註冊 openwhispr:// 協定。"
     },
-    "welcomeSubtitle": "用語音完成一切",
+    "welcomeSubtitle": "這是一句不錯的標語",
     "welcomeTitle": "歡迎使用 OpenWhispr",
     "sessionExpired": "工作階段已過期，請重新登入。"
   },

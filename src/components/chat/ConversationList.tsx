@@ -18,6 +18,7 @@ interface ConversationListProps {
   onOpenSearch: () => void;
   onArchive: (id: number) => void;
   onDelete: (id: number) => void;
+  onExportToGoogleDrive?: (id: number) => void;
   refreshKey: number;
 }
 
@@ -64,6 +65,7 @@ export default function ConversationList({
   onOpenSearch,
   onArchive,
   onDelete,
+  onExportToGoogleDrive,
   refreshKey,
 }: ConversationListProps) {
   const { t } = useTranslation();
@@ -263,6 +265,7 @@ export default function ConversationList({
                       onClick={() => onSelectConversation(item.data.id)}
                       onArchive={onArchive}
                       onDelete={onDelete}
+                      onExportToGoogleDrive={onExportToGoogleDrive}
                     />
                   )}
                 </div>

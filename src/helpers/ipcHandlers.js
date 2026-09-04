@@ -4960,6 +4960,74 @@ class IPCHandlers {
       }
     );
 
+    // Anthropic BYOK streaming for the chat/assistant tool-calling pipeline.
+    // Anthropic's API refuses browser-origin requests outright, and the pill
+    // window that hosts the assistant panel keeps Chromium's default
+    // webSecurity enabled — so this runs the AI SDK's doStream here, where
+    // Node's fetch has no CORS enforcement, and relays parts verbatim to the
+    // renderer's LanguageModelV3 shim. Mirrors enterprise-stream-start below.
+    this.anthropicStreamAborts = new Map();
+    ipcMain.handle("anthropic-stream-start", async (event, payload) => {
+      const { streamId, modelId, options } = payload || {};
+      const send = (message) => {
+        if (!event.sender.isDestroyed()) {
+          event.sender.send("anthropic-stream-part", { streamId, ...message });
+        }
+      };
+      const abortController = new AbortController();
+      this.anthropicStreamAborts.set(streamId, abortController);
+      const abortOnGone = (_event, _url, isInPlace, isMainFrame) => {
+        if (isMainFrame && !isInPlace) abortController.abort();
+      };
+      const abortOnDestroyed = () => abortController.abort();
+      event.sender.on("did-start-navigation", abortOnGone);
+      event.sender.once("destroyed", abortOnDestroyed);
+      try {
+        if (!streamId) throw new Error("Missing stream id");
+        const apiKey = this.environmentManager.getAnthropicKey();
+        if (!apiKey) throw new Error("Anthropic API key not configured");
+
+        const { createAnthropic } = require("@ai-sdk/anthropic");
+        const model = createAnthropic({ apiKey })(modelId);
+
+        const { stream } = await model.doStream({
+          ...options,
+          abortSignal: abortController.signal,
+        });
+        const reader = stream.getReader();
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (event.sender.isDestroyed()) {
+              abortController.abort();
+              break;
+            }
+            send({ part: value });
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        send({ done: true });
+        return { success: true };
+      } catch (err) {
+        debugLogger.error("Anthropic stream error:", err);
+        send({ error: err.message });
+        return { success: false, error: err.message };
+      } finally {
+        this.anthropicStreamAborts.delete(streamId);
+        if (!event.sender.isDestroyed()) {
+          event.sender.removeListener("did-start-navigation", abortOnGone);
+          event.sender.removeListener("destroyed", abortOnDestroyed);
+        }
+      }
+    });
+
+    ipcMain.handle("anthropic-stream-cancel", async (event, streamId) => {
+      this.anthropicStreamAborts.get(streamId)?.abort();
+      this.anthropicStreamAborts.delete(streamId);
+    });
+
     ipcMain.handle("check-local-reasoning-available", async () => {
       try {
         const LocalReasoningService = require("../services/localReasoningBridge").default;
